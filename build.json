@@ -1,0 +1,38 @@
+{
+  "project_path": "./cmd/manage",
+  "output_dir": "./build",
+  "name_template": "manage-v{version}-{os}-{arch}",
+  "version": "1.0.0",
+  "clean_before_build": true,
+  "cgo_enabled": 0,
+  "go_build_args": ["-trimpath", "-buildvcs=false", "-gcflags=all=-l"],
+  "ldflags": "-s -w -X main.version=${version} -X main.commit=${commit} -X main.buildTime=${date}T${time}",
+  "tags": "",
+  "platforms": "all",
+  "exclude_platforms": ["android/*", "ios/*", "plan9/*"],
+  "platform_config": {
+    "linux/arm": {
+      "goarm": "7",
+      "ldflags": "-s -w -X main.arch=armv7"
+    },
+    "linux/amd64": {
+      "goamd64": "v3",
+      "ldflags": "-s -w -X main.arch=amd64v3"
+    },
+    "windows/amd64": {
+      "cgo_enabled": 1,
+      "tags": "windows",
+      "env": {
+        "CC": "x86_64-w64-mingw32-gcc"
+      }
+    },
+    "darwin/amd64": {
+      "goamd64": "v2",
+      "env": {
+        "CGO_ENABLED": "1",
+        "SDKROOT": "/path/to/macOS.sdk"
+      }
+    }
+  },
+  "verbose": true
+}
