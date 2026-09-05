@@ -98,7 +98,7 @@ const docList = `[?GN]List[?RT] themes and tasks with optional filters.
 
 func NewCli() *tap.Parser {
 	p := tap.NewParser("manage", utils.FramedTextMap("CN", "[?YW]Manage[?RT]", "", map[string]string{
-		"": `[?GN]Powerfull task manager.[?RT]
+		"": `[?GN]Powerful task manager.[?RT]
 [?BBK]Supports themes, tasks and tables.[?RT]
 [?BBK]Very good for education, but is also 
 [?BBK]useful for other tasks.[?RT]`,
