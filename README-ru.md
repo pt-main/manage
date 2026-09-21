@@ -37,6 +37,11 @@ manage list
 manage do backend 1
 ```
 
+Или выполним последнюю: 
+```bash
+manage do backend
+```
+
 ---
 
 ## Основные понятия
@@ -142,7 +147,7 @@ manage add table monday backend --force   # заменит на одну тем�
 Отмечает задачи выполненными или удаляет их.
 
 ```bash
-manage do <theme> <id...> [--delete]
+manage do <theme> [id...] [--delete]
 ```
 
 - Без `--delete` – задача помечается как выполненная, но остаётся в списке.
@@ -153,6 +158,7 @@ manage do <theme> <id...> [--delete]
 ```bash
 manage do backend 1 2 3
 manage do backend 1 --delete
+manage do backend # сделать последнюю задачу
 ```
 
 ---

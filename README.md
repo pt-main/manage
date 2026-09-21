@@ -37,6 +37,12 @@ Mark a task as done:
 manage do backend 1
 ```
 
+Or do latest:
+
+```bash
+manage do backend
+```
+
 ---
 
 ## Core concepts
@@ -142,7 +148,7 @@ manage add table monday backend --force   # replaces with just backend
 Marks tasks as done or deletes them.
 
 ```bash
-manage do <theme> <id...> [--delete]
+manage do <theme> [id...] [--delete]
 ```
 
 - Without `--delete` – marks the task as done, but keeps it in the list.
@@ -153,6 +159,7 @@ Example:
 ```bash
 manage do backend 1 2 3
 manage do backend 1 --delete
+manage do backend # do latest task
 ```
 
 ---
