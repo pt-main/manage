@@ -24,14 +24,7 @@ func Do(p *tap.Parser, s []string) error {
 	hasError := false
 	tasks := []int{}
 
-	for _, taskId := range s[1:] {
-		var id int
-		var err error
-		id, err = strconv.Atoi(taskId)
-		if err != nil {
-			return err
-		}
-
+	do := func(id int) {
 		done := false
 		newTasks := []*manager.OneTask{}
 		for _, task := range theme.Tasks {
@@ -57,8 +50,32 @@ func Do(p *tap.Parser, s []string) error {
 		}
 	}
 
+	if len(s) == 1 {
+		tasks := theme.Tasks
+		if len(tasks) == 0 {
+			color.PrintColored("[?RD]🔴 Tasks not found")
+			hasError = true
+		} else {
+			last := tasks[len(tasks)-1]
+			do(last.Id)
+		}
+	}
+
+	for _, taskId := range s[1:] {
+		id, err := strconv.Atoi(taskId)
+		if err != nil {
+			return err
+		}
+		do(id)
+	}
+
 	if hasError {
-		color.PrintlnColored("[?RD]🔴 Failed to do tasks[?RT]: %v", tasks)
+		color.PrintColored("[?RD]🔴 Failed to do tasks[?RT]")
+		if len(tasks) != 0 {
+			color.PrintlnColored("%v", tasks)
+		} else {
+			print("\n")
+		}
 	} else {
 		color.PrintlnColored("[?GN]✅ Tasks done![?RT]")
 	}

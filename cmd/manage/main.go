@@ -43,7 +43,7 @@ const docAdd = `[?GN]Add[?RT] themes, tasks, tags, or tables.
 const docDo = `[?GN]Mark[?RT] tasks as done or delete them.
 
 [?BBE]Usage:[?RT]
-  [?YW]manage do[?RT] [?BGN]<theme>[?RT] [?BGN]<task-id>[?RT] [?BGN][task-id...][?RT] [?BBK]--delete[?RT]
+  [?YW]manage do[?RT] [?BGN]<theme>[?RT] [?BGN][task-id...][?RT] [?BBK]--delete[?RT]
 
 [?BBE]Description:[?RT]
   Marks one or more tasks as completed. With [?BBK]--delete[?RT], completed tasks are removed from the list;
@@ -51,7 +51,8 @@ const docDo = `[?GN]Mark[?RT] tasks as done or delete them.
 
 [?BBE]Examples:[?RT]
   [?BE]manage do math 1 2 3[?RT]
-  [?BE]manage do math 1 --delete[?RT]`
+  [?BE]manage do math 1 --delete[?RT]
+  [?BE]manage do math [?BBK]# do last task`
 
 const docSet = `[?GN]Set[?RT] various parameters.
 
@@ -120,7 +121,7 @@ func NewCli() *tap.Parser {
 
 	p.AddCommand("add", Add, docAdd, []string{"mode", "arg"}, nil, true)
 
-	p.AddCommand("do", Do, docDo, []string{"theme", "task"}, nil, true)
+	p.AddCommand("do", Do, docDo, []string{"theme"}, nil, true)
 
 	p.AddCommand("set", Set, docSet, nil, nil, true)
 
