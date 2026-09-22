@@ -1,4 +1,4 @@
-# manage — command-line task manager
+# manage - command-line task manager
 
 ```bash
 go install github.com/pt-main/manage/cmd/manage@latest
@@ -234,7 +234,7 @@ Settings:
 
 ## License
 
-Apache 2.0 — details in [LICENSE](https://github.com/pt-main/manage/blob/main/LICENSE).
+Apache 2.0 - details in [LICENSE](https://github.com/pt-main/manage/blob/main/LICENSE).
 
 ---
 
