@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/pt-main/manage/manager"
-	"github.com/pt-main/tap"
+	tap "github.com/pt-main/tap/go"
 )
 
 func Add(p *tap.Parser, s []string) error {
@@ -78,9 +78,11 @@ func Add(p *tap.Parser, s []string) error {
 		} else if !append && force {
 			added := false
 			for _, task := range task.Tasks {
-				if task.Id == to {
+				if task.GetId() == to {
 					added = true
-					task.About = text
+					if !task.SetAbout(text) {
+						return fmt.Errorf("❌ Can't edit '%v' task about", task.Type())
+					}
 				}
 			}
 			if !added {
@@ -89,9 +91,11 @@ func Add(p *tap.Parser, s []string) error {
 		} else if !append && !force {
 			added := false
 			for _, task := range task.Tasks {
-				if task.Id == to {
+				if task.GetId() == to {
 					added = true
-					task.About += text
+					if !task.Add(text) {
+						return fmt.Errorf("❌ Can't edit '%v' task about", task.Type())
+					}
 				}
 			}
 			if !added {

@@ -6,7 +6,28 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/pt-main/tap/go/color"
 )
+
+type TaskDataType string
+
+var (
+	DefaultTaskT TaskDataType = "DEFAULT"
+	CodeTaskT    TaskDataType = "CODE"
+)
+
+type TaskData interface {
+	Type() TaskDataType
+	Render(colored bool) string
+	GetId() int
+	Do() error
+	IsDone() bool
+	Add(s string) bool
+	GetAbout() string
+	SetAbout(string) bool
+	GetDate() string
+}
 
 type OneTask struct {
 	Id        int
@@ -15,17 +36,69 @@ type OneTask struct {
 	CreatedAt string
 }
 
+func (ot *OneTask) GetAbout() string {
+	return ot.About
+}
+
+func (ot *OneTask) SetAbout(s string) bool {
+	ot.About = s
+	return true
+}
+
+func (ot *OneTask) GetDate() string {
+	return ot.CreatedAt
+}
+
+func (ot *OneTask) Type() TaskDataType {
+	return DefaultTaskT
+}
+
+func (ot *OneTask) Render(colored bool) string {
+	status := "TOOO"
+	if ot.Done {
+		status = "DONE"
+	}
+	res := fmt.Sprintf(
+		"[?BYW]%v [?CN][[?GN]%v[?CN]] [?BBK]([?GN]%v[?BBK])[?RT]:",
+		status, ot.Id, ot.CreatedAt,
+	)
+	if colored {
+		res = color.Set(res)
+	} else {
+		res = color.ReplaceColors(res)
+	}
+	return res + "\n" + ot.About
+}
+
+func (ot *OneTask) GetId() int {
+	return ot.Id
+}
+
+func (ot *OneTask) Do() error {
+	ot.Done = true
+	return nil
+}
+
+func (ot *OneTask) IsDone() bool {
+	return ot.Done
+}
+
+func (ot *OneTask) Add(s string) bool {
+	ot.About += s
+	return true
+}
+
 type Task struct {
 	Tags     []string
 	Priority string
-	Tasks    []*OneTask
+	Tasks    []TaskData
 	Name     string
 	Last     int
 }
 
-func (task *Task) GetTaskById(id int) *OneTask {
+func (task *Task) GetTaskById(id int) TaskData {
 	for _, task := range task.Tasks {
-		if task.Id == id {
+		if task.GetId() == id {
 			return task
 		}
 	}
@@ -54,25 +127,23 @@ func (task *Task) SetPriority(priority string) *Task {
 }
 
 func (task *Task) DoTask(n int) error {
-	done := false
-	for _, task := range task.Tasks {
-		if task.Id == n {
-			done = true
-			task.Done = true
+	for _, t := range task.Tasks {
+		if t.GetId() == n {
+			return t.Do()
 		}
 	}
-	if !done {
-		return fmt.Errorf("Can't find task n %v", n)
-	}
-	return nil
+	return fmt.Errorf("can't find task %d", n)
 }
 
 func (task *Task) AppendToTask(n int, about string) error {
 	appended := false
 	for _, task := range task.Tasks {
-		if task.Id == n {
+		if task.GetId() == n {
 			appended = true
-			task.About += about
+			if ok := task.Add(about); !ok {
+				return fmt.Errorf("Can't add about to task: %v", n)
+			}
+			break
 		}
 	}
 	if !appended {
@@ -87,7 +158,7 @@ func NewTask(tags []string, priority, name string) *Task {
 		Priority: priority,
 		Name:     name,
 		Last:     0,
-		Tasks:    make([]*OneTask, 0),
+		Tasks:    make([]TaskData, 0),
 	}
 }
 
@@ -126,7 +197,7 @@ func (m *Manager) AddTheme(name string, task *Task, force bool) error {
 	return nil
 }
 
-func (m *Manager) addTask(theme string, task *OneTask) error {
+func (m *Manager) addTask(theme string, task TaskData) error {
 	if err := m.hasTheme(theme); err != nil {
 		return err
 	}
@@ -226,15 +297,15 @@ func (m *Manager) Filter(tags, priority, table []string, state, filtering string
 		}
 
 		if activated && add || !activated {
-			tasks := []*OneTask{}
+			tasks := []TaskData{}
 			for _, oneT := range task.Tasks {
 				switch state {
 				case "todo":
-					if !oneT.Done {
+					if !oneT.IsDone() {
 						tasks = append(tasks, oneT)
 					}
 				case "done":
-					if oneT.Done {
+					if oneT.IsDone() {
 						tasks = append(tasks, oneT)
 					}
 				default:

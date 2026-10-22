@@ -4,7 +4,7 @@
 go install github.com/pt-main/manage/cmd/manage@latest
 ```
 
-**Manage** is a CLI tool for handling tasks organised in a hierarchical structure: topics (projects, areas) contain tasks. Each topic has a priority, tags, and a task list; each task has a completion status, a description, and a timestamp. Named tables are also supported for grouping topics. The tool is domain‑agnostic and fits any scenario, from personal errands to work projects.
+**Manage** is a CLI tool for handling tasks organised in a hierarchical structure: topics (projects, areas) contain tasks. Each topic has a priority, tags, and a task list; each task has a completion status, a description, and a timestamp. Named tables are also supported for grouping topics. The tool is domain-agnostic and fits any scenario, from personal errands to work projects.
 
 ---
 
@@ -16,7 +16,7 @@ Before the first use, run initialisation:
 manage init
 ```
 
-This creates a `~/manager_config.tycl` file with default settings.
+This creates a `~/manager_config.tess` file with default settings.
 
 Let's add a topic and a task:
 
@@ -47,14 +47,14 @@ manage do backend
 
 ## Core concepts
 
-- **Topic** – a group of tasks (project, module, client).  
+- **Topic** - a group of tasks (project, module, client).  
   A topic has a name, priority, tags, and a task list.
-- **Task** – a unit of work.  
-  A task has an ID (auto‑incremented within the topic), a description, a status (done/not done), and a creation timestamp.
-- **Priority** – any string without spaces (e.g., `A`, `high`, `critical`).  
+- **Task** - a unit of work.  
+  A task has an ID (auto-incremented within the topic), a description, a status (done/not done), and a creation timestamp.
+- **Priority** - any string without spaces (e.g., `A`, `high`, `critical`).  
   The sorting order is defined in the configuration.
-- **Tags** – labels for grouping topics.
-- **Table** – a named list of topics for quick filtering.
+- **Tags** - labels for grouping topics.
+- **Table** - a named list of topics for quick filtering.
 
 ---
 
@@ -66,8 +66,10 @@ manage do backend
 manage init
 ```
 
-Creates the configuration file `~/manager_config.tycl`.  
-Without this, commands won't work. The file stores tasks, settings, and tables in the contract‑fixed format of the configuration language used.
+Creates the configuration file `~/manager_config.tess`.  
+Without this, commands won't work. The file stores tasks, settings, and tables in Tessera format.
+
+**Warning:** running `init` when a config already exists overwrites it.
 
 ---
 
@@ -81,10 +83,10 @@ Adds a topic, task, tags, or table.
 manage add theme <name> [--priority=<value>] [--tags="tag1 tag2 ..."] [--force]
 ```
 
-- `name` – topic name (required).
-- `--priority` – arbitrary string without spaces. If omitted, the `default_priority` from settings is used (default `F`).
-- `--tags` – space‑separated list of tags. If omitted, no tags are added.
-- `--force` – replace an existing topic with the same name. Without this flag, the command fails if the topic already exists (data is untouched).
+- `name` - topic name (required).
+- `--priority` - arbitrary string without spaces. If omitted or empty, the `default_priority` from settings is used (default `F`).
+- `--tags` - space-separated list of tags. If omitted, no tags are added.
+- `--force` - replace an existing topic with the same name. Without this flag, the command fails if the topic already exists (data is untouched).
 
 Examples:
 
@@ -100,9 +102,9 @@ manage add theme backend --priority=B --tags="rust" --force
 manage add task <theme> <text> [--id=<num>] [--force]
 ```
 
-- Without `--id` – creates a new task with a new ID.
-- With `--id` and without `--force` – appends the text to the existing task.
-- With `--id` and `--force` – replaces the existing task with the new text.
+- Without `--id` - creates a new task with a new ID. `--force` has no effect in this case.
+- With `--id` and without `--force` - appends the text to the existing task.
+- With `--id` and `--force` - replaces the existing task with the new text.
 
 Examples:
 
@@ -130,8 +132,8 @@ manage add tag backend api !go
 manage add table <name> <themes...> [--force]
 ```
 
-- Without `--force` – adds topics to an existing table (creates the table if it doesn't exist).
-- With `--force` – replaces the whole table content with the new list.
+- Without `--force` - adds topics to an existing table (creates the table if it doesn't exist).
+- With `--force` - replaces the whole table content with the new list.
 
 Examples:
 
@@ -151,8 +153,11 @@ Marks tasks as done or deletes them.
 manage do <theme> [id...] [--delete]
 ```
 
-- Without `--delete` – marks the task as done, but keeps it in the list.
-- With `--delete` – deletes the task.
+- Without `--delete` - marks the task as done, but keeps it in the list.
+- With `--delete` - deletes the task.
+- Without `id...` - marks the last task of the topic.
+
+If the topic has no tasks, or some of the given IDs do not exist, an error is printed. Other tasks are still processed.
 
 Example:
 
@@ -185,29 +190,34 @@ manage set priority backend A
 Displays the list of topics and tasks with filtering. Empty topics are shown as a warning before the list.
 
 ```bash
-manage list [--priority="A B"] [--tags="tag1 tag2"] [--themes="theme1 theme2"] [--table=<name>] [--state=(todo|done|all)] [--todo] [--done] [--filter=(and|or)]
+manage list [--priority="A B"] [--tags="tag1 tag2"] [--themes="theme1 theme2"] [--table=<name>] [--state=(todo|done|all)] [--todo] [--done] [--filter=(and|or)] [--code]
 ```
 
 #### Filters
 
-- `--priority` – space‑separated list of priorities.
-- `--tags` – space‑separated list of tags.
-- `--themes` – space‑separated list of topic names.
-- `--table` – table name (shows topics from that table).
-- `--state` – task status:
-  - `todo` – only unfinished tasks.
-  - `done` – only completed tasks.
-  - `all` – all (default).
-- `--todo` – shorthand for `--state=todo`.
-- `--done` – shorthand for `--state=done`.
-- `--filter` – logic for combining conditions:
-  - `and` – all conditions must match (default).
-  - `or` – any condition is sufficient.
+- `--priority` - space-separated list of priorities.
+- `--tags` - space-separated list of tags.
+- `--themes` - space-separated list of topic names.
+- `--table` - table name (shows topics from that table).
+- `--state` - task status:
+  - `todo` - only unfinished tasks.
+  - `done` - only completed tasks.
+  - `all` - all (default).
+- `--todo` - shorthand for `--state=todo`.
+- `--done` - shorthand for `--state=done`.
+- `--filter` - logic for combining conditions:
+  - `and` - all conditions must match (default).
+  - `or` - any condition is sufficient.
+- `--code` - additionally include `TODO:` comments found in the current directory.
+
+`--table` and `--themes` are combined into a single topic-name filter.
+
+If both `--todo` and `--done` are given, `all` is used with a warning.
 
 #### Sorting
 
 Topics are displayed in the priority order defined in the settings (default from `A` to `Z`).  
-Tasks within a topic are sorted by ID.
+Tasks are shown grouped by their topic.
 
 #### Examples
 
@@ -216,27 +226,44 @@ manage list
 manage list --priority="A B" --tags="go api" --filter=or
 manage list --table=monday --todo
 manage list --done --tags=exam
+manage list --code
 ```
+
+---
+
+### `sys`
+
+System information and debug commands.
+
+```bash
+manage sys version
+manage sys conf
+manage sys conf-path
+```
+
+- `version` - prints Tap and Manage versions.
+- `conf` - prints the raw contents of the current configuration file.
+- `conf-path` - prints the configuration file path (`~/manager_config.tess`).
 
 ---
 
 ## Configuration
 
-The file `~/manager_config.tycl` is created by `init`.  
-You can edit it manually for bulk changes, but usually all operations are done via the CLI.
+The file `~/manager_config.tess` is created by `init`.  
+It uses Tessera format. You can edit it manually for bulk changes, but usually all operations are done via the CLI.
 
 Settings:
 
-- `priority_order` – the priority order (default A to Z).
-- `default_priority` – the value used when adding a topic without `--priority`.
+- `priority_order` - the priority order (default A to Z).
+- `default_priority` - the value used when adding a topic without `--priority`.
 
 ---
 
 ## License
 
-Apache 2.0 - details in [LICENSE](https://github.com/pt-main/manage/blob/main/LICENSE).
+MIT - details in [LICENCE](https://github.com/pt-main/manage/blob/main/LICENCE).
 
 ---
 
-**manage** is written using [tap](https://github.com/pt-main/tap), [tycl](https://github.com/pt-main/tycl), and [lc](https://github.com/pt-main/lc).  
+**manage** is written using [tap](https://github.com/pt-main/tap), [tessera](https://github.com/pt-main/tessera), and [tycl](https://github.com/pt-main/tycl).  
 Author: Pt.

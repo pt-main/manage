@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pt-main/manage/config"
 	"github.com/pt-main/manage/manager"
-	loadtycl "github.com/pt-main/manage/tycl"
 	"github.com/pt-main/tycl/utils"
 )
 
@@ -39,10 +39,10 @@ func BackFromHd() {
 	backTo = ""
 }
 
-var ConfigFile = "manager_config.tycl"
+var ConfigFile = "manager_config.tess"
 
 func Save(m *manager.Manager) error {
-	file, err := loadtycl.GenCfg(m)
+	file, err := config.GenCfg(m)
 	if err != nil {
 		return fmt.Errorf("❗️ Save data: %v", err)
 	}
@@ -52,14 +52,22 @@ func Save(m *manager.Manager) error {
 	return err
 }
 
-func Load(m *manager.Manager) error {
+func GetConf() (string, error) {
 	ToHd()
 	file, err := utils.OpenF(ConfigFile)
 	if err != nil {
-		return fmt.Errorf("❗️ Load data: %v. Do you forget to use init?", err)
+		return "", fmt.Errorf("❗️ Load data: %v. Do you forget to use init?", err)
 	}
 	BackFromHd()
-	err = loadtycl.GenManager(file, m)
+	return file, nil
+}
+
+func Load(m *manager.Manager) error {
+	file, err := GetConf()
+	if err != nil {
+		return err
+	}
+	err = config.GenManager(file, m)
 	if err != nil {
 		return err
 	}

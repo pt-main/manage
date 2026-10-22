@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/pt-main/manage/manager"
-	"github.com/pt-main/tap"
-	"github.com/pt-main/tap/color"
-	"github.com/pt-main/tap/utils"
+	tap "github.com/pt-main/tap/go"
+	"github.com/pt-main/tap/go/color"
+	"github.com/pt-main/tap/go/utils"
 )
 
 func List(p *tap.Parser, s []string) error {
@@ -63,21 +64,29 @@ func List(p *tap.Parser, s []string) error {
 
 	textRaw := map[string]*listTheme{}
 
-	for _, theme := range filtered {
-		tasks := []string{}
-		for _, task := range theme.Tasks {
-			state := "todo"
-			if task.Done {
-				state = "done"
+	if _, has := p.Flags["code"]; has {
+		for _, task := range manager.FindTodosInDir(".") {
+			textRaw[strconv.Itoa(task.Id)] = &listTheme{
+				priority: m.Settings.PriorityOrder[0],
+				text:     task.Render(color.ColorEnabled),
 			}
-			tasks = append(tasks, fmt.Sprintf(
-				"[?RT]- [?GN]%v[?BBK] ([?GN]%v[?RT][?BBK]): [[?YW]%v[?BBK]]:[?RT]\n  %v",
-				task.Id, task.CreatedAt,
-				state, task.About,
-			))
 		}
-		res := color.Set(strings.Join(tasks, "\n"))
-		withoutColors := color.ReplaceColors(strings.Join(tasks, "\n"))
+	}
+
+	for _, theme := range filtered {
+		tasks := map[string]string{}
+		raw := []string{}
+		for _, task := range theme.Tasks {
+			// text := utils.FramedTextMap(
+			// 	"CN", color.Set("[?BCN]"+string(task.Type())+" [?CN]TASK[?RT]"),
+			// 	"", map[string]string{"": task.Render(color.ColorEnabled)},
+			// )
+			text := "- " + strings.ReplaceAll(task.Render(color.ColorEnabled), "\n", "\n  ")
+			tasks[strconv.Itoa(task.GetId())] = text
+			raw = append(raw, text)
+		}
+		res := utils.FramedTextMap("CN", "TASKS", "", tasks)
+		withoutColors := color.ReplaceColors(strings.Join(raw, "\n"))
 		if strings.TrimSpace(withoutColors) != "" {
 			textRaw[theme.Name] = &listTheme{
 				text:     res,

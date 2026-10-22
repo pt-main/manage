@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	"github.com/pt-main/manage/manager"
-	"github.com/pt-main/tap"
-	"github.com/pt-main/tap/utils"
+	tap "github.com/pt-main/tap/go"
+	"github.com/pt-main/tap/go/utils"
 )
+
+var Version = "1.2.0"
 
 const docInit = `[?GN]Initialize[?RT] config file.
 
@@ -14,8 +16,9 @@ const docInit = `[?GN]Initialize[?RT] config file.
   [?YW]manage init[?RT]
 
 [?BBE]Description:[?RT]
-  Creates the config directory [?BBK]~/.manage/[?RT] and a default configuration file.
-  This is the first command you need to run before using any other commands.`
+  Creates [?BBK]~/manager_config.tess[?RT] with default settings.
+  This is the first command you need to run before using any other commands.
+  Warning: overwrites an existing config file.`
 
 const docAdd = `[?GN]Add[?RT] themes, tasks, tags, or tables.
 
@@ -72,7 +75,7 @@ const docList = `[?GN]List[?RT] themes and tasks with optional filters.
   [?YW]manage list[?RT] [?BBK]--priority="A B C"[?BBK] [?BBK]--tags="tag1 tag2"[?BBK]
               [?BBK]--themes="math bio"[?BBK] [?BBK]--table=[?BGN]<day>[?BBK]
               [?BBK]--state=[?BGN](todo|done|all)[?BBK] [?BBK]--todo[?BBK] [?BBK]--done[?BBK]
-              [?BBK]--filter=[?BGN](and|or)[?BBK]
+              [?BBK]--filter=[?BGN](and|or)[?BBK] [?BBK]--code[?RT]
 
 [?BBE]Description:[?RT]
   Displays themes and their tasks, sorted by priority. Filters:
@@ -84,6 +87,7 @@ const docList = `[?GN]List[?RT] themes and tasks with optional filters.
     * [?BBK]--todo[?RT]       - shortcut for --state=todo
     * [?BBK]--done[?RT]       - shortcut for --state=done
     * [?BBK]--filter[?RT]     - logical mode: and (all filters) or or (any filter) (default and)
+    * [?BBK]--code[?RT]       - include TODO comments found in the current directory
 
   If no filters are given, all themes are shown.
 
@@ -126,6 +130,29 @@ func NewCli() *tap.Parser {
 	p.AddCommand("set", Set, docSet, nil, nil, true)
 
 	p.AddCommand("list", List, docList, nil, nil, false)
+
+	sys := tap.NewParser("sys", "system info and debug", []string{"-h", "help"}, tap.DefaultParserConfig())
+
+	sys.AddCommand("version", func(p *tap.Parser, s []string) error {
+		fmt.Printf("Tap v%v, Manage v%v\n", tap.Version, Version)
+		return nil
+	}, "Show version", nil, nil, false)
+
+	sys.AddCommand("conf", func(p *tap.Parser, s []string) error {
+		file, err := GetConf()
+		if err != nil {
+			return err
+		}
+		println(file)
+		return nil
+	}, "Show config", nil, nil, false)
+
+	sys.AddCommand("conf-path", func(p *tap.Parser, s []string) error {
+		println("~/" + ConfigFile)
+		return nil
+	}, "Show config", nil, nil, false)
+
+	p.AddSubcommand("sys", sys)
 
 	return p
 }

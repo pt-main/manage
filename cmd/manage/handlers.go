@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/pt-main/manage/manager"
-	"github.com/pt-main/tap"
-	"github.com/pt-main/tap/color"
+	tap "github.com/pt-main/tap/go"
+	"github.com/pt-main/tap/go/color"
 )
 
 func Do(p *tap.Parser, s []string) error {
@@ -26,11 +26,11 @@ func Do(p *tap.Parser, s []string) error {
 
 	do := func(id int) {
 		done := false
-		newTasks := []*manager.OneTask{}
+		newTasks := []manager.TaskData{}
 		for _, task := range theme.Tasks {
-			if task.Id == id {
+			if task.GetId() == id {
 				done = true
-				task.Done = true
+				task.Do()
 				if !delete {
 					newTasks = append(newTasks, task)
 				}
@@ -57,7 +57,7 @@ func Do(p *tap.Parser, s []string) error {
 			hasError = true
 		} else {
 			last := tasks[len(tasks)-1]
-			do(last.Id)
+			do(last.GetId())
 		}
 	}
 

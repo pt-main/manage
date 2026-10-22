@@ -2,7 +2,7 @@
   "project_path": "./cmd/manage",
   "output_dir": "../build",
   "name_template": "manage-v{version}-{os}-{arch}",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "clean_before_build": true,
   "cgo_enabled": 0,
   "go_build_args": ["-trimpath", "-buildvcs=false", "-gcflags=all=-l"],
