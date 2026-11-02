@@ -13,11 +13,14 @@ import (
 	"github.com/pt-main/tap/go/utils"
 )
 
-func List(p *tap.Parser, s []string) error {
-	m := manager.NewManager()
-	if err := Load(m); err != nil {
-		return err
-	}
+type listTheme struct {
+	text     string
+	priority string
+}
+
+func (mc *ManageCli) List(p *tap.Parser, s []string) error {
+	m := mc.C
+	mc.NoSave = true
 
 	_table, has_table := p.Flags["table"]
 	var ok bool
@@ -33,14 +36,21 @@ func List(p *tap.Parser, s []string) error {
 	if has_tags {
 		tags = strings.Split(_tags, " ")
 	}
+
 	_priority, has_priority := p.Flags["priority"]
 	priority := []string{}
 	if has_priority {
 		priority = strings.Split(_priority, " ")
 	}
+	for _, pr := range priority {
+		if !slices.Contains(m.Settings.PriorityOrder, pr) {
+			return fmt.Errorf("Priority is not found: %v", pr)
+		}
+	}
+
 	_themes, has_themes := p.Flags["themes"]
 	if has_themes {
-		table = append(table, strings.Split(_themes, " ")...)
+		table = append(slices.Clone(table), strings.Split(_themes, " ")...)
 	}
 
 	filter, _ := p.Flags["filter"]
@@ -64,11 +74,15 @@ func List(p *tap.Parser, s []string) error {
 
 	textRaw := map[string]*listTheme{}
 
+	space := func(s string) string {
+		return "|  " + strings.ReplaceAll(s, "\n", "\n|  ")
+	}
+
 	if _, has := p.Flags["code"]; has {
 		for _, task := range manager.FindTodosInDir(".") {
-			textRaw[strconv.Itoa(task.Id)] = &listTheme{
+			textRaw["[CODE]:"+strconv.Itoa(task.Id)] = &listTheme{
 				priority: m.Settings.PriorityOrder[0],
-				text:     task.Render(color.ColorEnabled),
+				text:     space(task.Render(color.ColorEnabled)),
 			}
 		}
 	}
@@ -81,7 +95,7 @@ func List(p *tap.Parser, s []string) error {
 			// 	"CN", color.Set("[?BCN]"+string(task.Type())+" [?CN]TASK[?RT]"),
 			// 	"", map[string]string{"": task.Render(color.ColorEnabled)},
 			// )
-			text := "- " + strings.ReplaceAll(task.Render(color.ColorEnabled), "\n", "\n  ")
+			text := space(task.Render(color.ColorEnabled))
 			tasks[strconv.Itoa(task.GetId())] = text
 			raw = append(raw, text)
 		}
@@ -93,7 +107,7 @@ func List(p *tap.Parser, s []string) error {
 				priority: theme.Priority,
 			}
 		} else {
-			color.PrintlnColored("[?YW]🟡 Empty theme: %v", theme.Name)
+			color.PrintlnColored("[?YW]❗️ Empty theme: %v", theme.Name)
 		}
 	}
 

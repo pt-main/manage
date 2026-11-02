@@ -1,10 +1,9 @@
-package main
+package config
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/pt-main/manage/config"
 	"github.com/pt-main/manage/manager"
 	"github.com/pt-main/tycl/utils"
 )
@@ -42,14 +41,22 @@ func BackFromHd() {
 var ConfigFile = "manager_config.tess"
 
 func Save(m *manager.Manager) error {
-	file, err := config.GenCfg(m)
+	file, err := GenCfg(m)
 	if err != nil {
 		return fmt.Errorf("❗️ Save data: %v", err)
 	}
 	ToHd()
-	err = utils.WriteF(ConfigFile, file)
-	BackFromHd()
-	return err
+	defer BackFromHd()
+
+	tmp := ConfigFile + ".tmp"
+	defer os.Remove(tmp)
+	if err := utils.WriteF(tmp, file); err != nil {
+		return fmt.Errorf("❗️ Save data (1): %v", err)
+	}
+	if err := os.Rename(tmp, ConfigFile); err != nil {
+		return fmt.Errorf("❗️ Save data (2): %v", err)
+	}
+	return nil
 }
 
 func GetConf() (string, error) {
@@ -67,7 +74,7 @@ func Load(m *manager.Manager) error {
 	if err != nil {
 		return err
 	}
-	err = config.GenManager(file, m)
+	err = GenManager(file, m)
 	if err != nil {
 		return err
 	}

@@ -54,7 +54,7 @@ func (ot *OneTask) Type() TaskDataType {
 }
 
 func (ot *OneTask) Render(colored bool) string {
-	status := "TOOO"
+	status := "TODO"
 	if ot.Done {
 		status = "DONE"
 	}
@@ -191,7 +191,7 @@ func (m *Manager) AddTheme(name string, task *Task, force bool) error {
 	if err := m.hasTheme(name); err == nil && !force {
 		return fmt.Errorf(
 			"Can't replace theme (theme %v is already created), use force flag for replace",
-			force)
+			name)
 	}
 	m.Tasks[name] = task
 	return nil
@@ -258,7 +258,8 @@ func (m *Manager) Filter(tags, priority, table []string, state, filtering string
 		defaultValue = false
 	}
 	filtered := []*Task{}
-	for name, task := range m.Tasks {
+	for name, _task := range m.Tasks {
+		task := *_task
 		add := false
 		activated := false
 		if len(tags) != 0 || len(priority) != 0 || len(table) != 0 {
@@ -313,7 +314,7 @@ func (m *Manager) Filter(tags, priority, table []string, state, filtering string
 				}
 			}
 			task.Tasks = tasks
-			filtered = append(filtered, task)
+			filtered = append(filtered, &task)
 		}
 	}
 	return filtered

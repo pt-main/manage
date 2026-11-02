@@ -1,6 +1,6 @@
 # Merged files
 
-Всего файлов: 14
+Всего файлов: 18
 
 ---
 
@@ -72,7 +72,8 @@ manage list
 manage do backend 1
 ```
 
-Или выполним последнюю: 
+Или выполним последнюю:
+
 ```bash
 manage do backend
 ```
@@ -81,11 +82,11 @@ manage do backend
 
 ## Основные понятия
 
-- **Тема** - группа задач (проект, модуль, клиент).  
+- **Тема** - группа задач (проект, модуль, клиент).
   У темы есть имя, приоритет, теги и список задач.
-- **Задача** - единица работы.  
+- **Задача** - единица работы.
   У задачи есть ID (автоинкремент в рамках темы), описание, статус (выполнена/нет), время создания.
-- **Приоритет** - любая строка без пробелов (например, `A`, `high`, `critical`).  
+- **Приоритет** - любая строка без пробелов (например, `A`, `high`, `critical`).
   Порядок сортировки задаётся в настройках.
 - **Теги** - метки для группировки тем.
 - **Таблица** - именованный список тем для быстрой фильтрации.
@@ -100,7 +101,7 @@ manage do backend
 manage init
 ```
 
-Создаёт конфигурационный файл `~/manager_config.tess`.  
+Создаёт конфигурационный файл `~/manager_config.tess`.
 Без этого команды не работают. В нём в формате Tessera хранятся задачи, настройки и таблицы.
 
 **Внимание:** повторный запуск `init` при существующем конфиге перезаписывает его.
@@ -109,7 +110,7 @@ manage init
 
 ### `add`
 
-Добавляет тему, задачу, теги или таблицу.
+Добавляет тему, задачу, теги, таблицу или приоритеты.
 
 #### Добавление темы
 
@@ -136,7 +137,7 @@ manage add theme backend --priority=B --tags="rust" --force
 manage add task <theme> <text> [--id=<num>] [--force]
 ```
 
-- Без `--id` - создаётся новая задача с новым ID. `--force` в этом случае не действует.
+- Без `--id` - создаётся новая задача с новым ID. `--force` в этом случае не применяется и вызывает ошибку.
 - С `--id` и без `--force` - текст **дописывается** к существующей задаче.
 - С `--id` и `--force` - текст **заменяет** существующую задачу.
 
@@ -154,11 +155,7 @@ manage add task backend "Заменить текст" --id=1 --force
 manage add tag <theme> <tags...>
 ```
 
-Добавляет теги к теме. Чтобы удалить тег, используйте `!` перед именем:
-
-```bash
-manage add tag backend api !go
-```
+Добавляет теги к теме. Уже существующие теги не дублируются.
 
 #### Добавление таблицы
 
@@ -176,6 +173,77 @@ manage add table monday backend frontend
 manage add table monday database          # добавит database
 manage add table monday backend --force   # заменит на одну тему backend
 ```
+
+#### Добавление приоритетов
+
+```bash
+manage add priority <p1> [p2 ...]
+```
+
+Добавляет приоритеты в конец `priority_order`, если их там ещё нет.
+
+Примеры:
+
+```bash
+manage add priority S
+manage add priority S T U
+```
+
+---
+
+### `remove`
+
+Удаляет темы, задачи, теги, таблицы и приоритеты.
+
+#### Удаление темы
+
+```bash
+manage remove theme <name>
+```
+
+Удаляет тему вместе со всеми задачами. Тема также удаляется из всех таблиц.
+
+#### Удаление задачи
+
+```bash
+manage remove task <theme> <id...>
+```
+
+Удаляет указанные задачи. ID оставшихся задач не перенумеровываются.
+
+Если ни один из указанных ID не найден, команда завершается ошибкой.
+
+#### Удаление тегов
+
+```bash
+manage remove tag <theme> <tags...>
+```
+
+Удаляет теги с темы. Если ни один из указанных тегов не найден, команда завершается ошибкой.
+
+#### Удаление таблицы
+
+```bash
+manage remove table <name>
+```
+
+Удаляет всю таблицу. Темы внутри неё не затрагиваются.
+
+#### Удаление тем из таблицы
+
+```bash
+manage remove from-table <name> <themes...>
+```
+
+Удаляет указанные темы из таблицы, не удаляя сами темы.
+
+#### Удаление приоритетов
+
+```bash
+manage remove priority <p1> [p2 ...]
+```
+
+Удаляет приоритеты из `priority_order`. Нельзя удалить все приоритеты сразу.
 
 ---
 
@@ -209,7 +277,7 @@ manage do backend # сделать последнюю задачу
 manage set priority <theme> <value>
 ```
 
-Меняет приоритет темы.
+Меняет приоритет темы. Если нового приоритета нет в `priority_order`, выводится предупреждение - тема не будет отображаться в `list`, пока приоритет не будет добавлен.
 
 Пример:
 
@@ -229,10 +297,10 @@ manage list [--priority="A B"] [--tags="tag1 tag2"] [--themes="theme1 theme2"] [
 
 #### Фильтры
 
-- `--priority` - список приоритетов через пробел.
+- `--priority` - список приоритетов через пробел. Значения проверяются по `priority_order`; при отсутствии выводится ошибка.
 - `--tags` - список тегов через пробел.
 - `--themes` - список имён тем через пробел.
-- `--table` - имя таблицы (будут показаны темы из неё).
+- `--table` - имя таблицы (будут показаны темы из неё). Таблица должна существовать, иначе выводится ошибка.
 - `--state` - состояние задач:
   - `todo` - только невыполненные.
   - `done` - только выполненные.
@@ -250,7 +318,7 @@ manage list [--priority="A B"] [--tags="tag1 tag2"] [--themes="theme1 theme2"] [
 
 #### Сортировка
 
-Темы выводятся в порядке приоритетов, заданных в настройках (по умолчанию от `A` до `Z`).  
+Темы выводятся в порядке приоритетов, заданных в настройках (по умолчанию от `A` до `Z`).
 Задачи выводятся в составе своих тем.
 
 #### Примеры
@@ -262,6 +330,26 @@ manage list --table=monday --todo
 manage list --done --tags=exam
 manage list --code
 ```
+
+---
+
+### `show`
+
+Выводит справочную информацию.
+
+```bash
+manage show themes
+manage show priorities
+manage show tags
+manage show theme <name>
+manage show info
+```
+
+- `themes` - все темы с приоритетом, счётчиками задач и тегами.
+- `priorities` - приоритеты из `priority_order` и темы в каждом из них. Также показывает приоритеты, которых нет в `priority_order`.
+- `tags` - все теги и темы, к которым они относятся.
+- `theme <name>` - карточка темы: приоритет, теги, счётчики задач, последний выданный ID, таблицы с этой темой.
+- `info` - сводка по приоритетам: все темы сгруппированы по приоритету со счётчиками задач, затем итоговые суммы.
 
 ---
 
@@ -283,7 +371,7 @@ manage sys conf-path
 
 ## Конфигурация
 
-Файл `~/manager_config.tess` создаётся при `init`.  
+Файл `~/manager_config.tess` создаётся при `init`.
 Он хранится в формате Tessera. Вы можете редактировать его вручную для массовых изменений, но обычно все операции выполняются через CLI.
 
 Настройки:
@@ -299,7 +387,7 @@ MIT - подробности в [LICENCE](https://github.com/pt-main/manage/blob
 
 ---
 
-**manage** написан с использованием [tap](https://github.com/pt-main/tap), [tessera](https://github.com/pt-main/tessera) и [tycl](https://github.com/pt-main/tycl).  
+**manage** написан с использованием [tap](https://github.com/pt-main/tap), [tessera](https://github.com/pt-main/tessera) и [tycl](https://github.com/pt-main/tycl).
 Автор: Pt.
 ````
 
@@ -312,40 +400,40 @@ MIT - подробности в [LICENCE](https://github.com/pt-main/manage/blob
 go install github.com/pt-main/manage/cmd/manage@latest
 ```
 
-**Manage** is a CLI tool for handling tasks organised in a hierarchical structure: topics (projects, areas) contain tasks. Each topic has a priority, tags, and a task list; each task has a completion status, a description, and a timestamp. Named tables are also supported for grouping topics. The tool is domain-agnostic and fits any scenario, from personal errands to work projects.
+**Manage** is a CLI tool for working with tasks organized in a hierarchical structure: themes (projects, areas) contain tasks. Each theme has a priority, tags, and a list of tasks; each task has a completion status, description, and timestamp. Named tables are additionally supported for grouping themes. The tool is not tied to any specific domain and is suitable for any scenario: from personal affairs to work projects.
 
 ---
 
 ## Quick start
 
-Before the first use, run initialisation:
+Before first use, run initialization:
 
 ```bash
 manage init
 ```
 
-This creates a `~/manager_config.tess` file with default settings.
+This creates the file `~/manager_config.tess` with default settings.
 
-Let's add a topic and a task:
+Let's add a theme and a task:
 
 ```bash
 manage add theme backend --priority=A --tags="go api"
 manage add task backend "Write tests"
 ```
 
-View the list:
+Let's view the list:
 
 ```bash
 manage list
 ```
 
-Mark a task as done:
+Mark the task as done:
 
 ```bash
 manage do backend 1
 ```
 
-Or do latest:
+Or do the last one:
 
 ```bash
 manage do backend
@@ -355,14 +443,14 @@ manage do backend
 
 ## Core concepts
 
-- **Topic** - a group of tasks (project, module, client).  
-  A topic has a name, priority, tags, and a task list.
-- **Task** - a unit of work.  
-  A task has an ID (auto-incremented within the topic), a description, a status (done/not done), and a creation timestamp.
-- **Priority** - any string without spaces (e.g., `A`, `high`, `critical`).  
-  The sorting order is defined in the configuration.
-- **Tags** - labels for grouping topics.
-- **Table** - a named list of topics for quick filtering.
+- **Theme** - a group of tasks (project, module, client).
+  A theme has a name, priority, tags, and a list of tasks.
+- **Task** - a unit of work.
+  A task has an ID (auto-increment within the theme), description, status (done/not done), and creation time.
+- **Priority** - any string without spaces (for example, `A`, `high`, `critical`).
+  Sort order is defined in the settings.
+- **Tags** - labels for grouping themes.
+- **Table** - a named list of themes for quick filtering.
 
 ---
 
@@ -374,27 +462,27 @@ manage do backend
 manage init
 ```
 
-Creates the configuration file `~/manager_config.tess`.  
-Without this, commands won't work. The file stores tasks, settings, and tables in Tessera format.
+Creates the configuration file `~/manager_config.tess`.
+Without this, commands do not work. It stores tasks, settings, and tables in Tessera format.
 
-**Warning:** running `init` when a config already exists overwrites it.
+**Warning:** running `init` again when a config already exists overwrites it.
 
 ---
 
 ### `add`
 
-Adds a topic, task, tags, or table.
+Adds a theme, task, tags, table, or priorities.
 
-#### Adding a topic
+#### Adding a theme
 
 ```bash
 manage add theme <name> [--priority=<value>] [--tags="tag1 tag2 ..."] [--force]
 ```
 
-- `name` - topic name (required).
-- `--priority` - arbitrary string without spaces. If omitted or empty, the `default_priority` from settings is used (default `F`).
-- `--tags` - space-separated list of tags. If omitted, no tags are added.
-- `--force` - replace an existing topic with the same name. Without this flag, the command fails if the topic already exists (data is untouched).
+- `name` - theme name (required).
+- `--priority` - any string without spaces. If omitted or empty, the `default_priority` value from settings is used (default `F`).
+- `--tags` - list of tags separated by spaces. If omitted, no tags are added.
+- `--force` - replace an existing theme with the same name. Without this flag, the command fails if the theme already exists (data is not affected).
 
 Examples:
 
@@ -410,9 +498,9 @@ manage add theme backend --priority=B --tags="rust" --force
 manage add task <theme> <text> [--id=<num>] [--force]
 ```
 
-- Without `--id` - creates a new task with a new ID. `--force` has no effect in this case.
-- With `--id` and without `--force` - appends the text to the existing task.
-- With `--id` and `--force` - replaces the existing task with the new text.
+- Without `--id` - a new task is created with a new ID. `--force` in this case is not applied and causes an error.
+- With `--id` and without `--force` - the text is **appended** to the existing task.
+- With `--id` and `--force` - the text **replaces** the existing task.
 
 Examples:
 
@@ -428,11 +516,7 @@ manage add task backend "Replace text" --id=1 --force
 manage add tag <theme> <tags...>
 ```
 
-Adds tags to a topic. To remove a tag, use `!` before the name:
-
-```bash
-manage add tag backend api !go
-```
+Adds tags to the theme. Existing tags are not duplicated.
 
 #### Adding a table
 
@@ -440,16 +524,87 @@ manage add tag backend api !go
 manage add table <name> <themes...> [--force]
 ```
 
-- Without `--force` - adds topics to an existing table (creates the table if it doesn't exist).
-- With `--force` - replaces the whole table content with the new list.
+- Without `--force` - adds themes to an existing table (if the table does not exist, creates it).
+- With `--force` - replaces the entire contents of the table with the new list.
 
 Examples:
 
 ```bash
 manage add table monday backend frontend
-manage add table monday database          # adds database
-manage add table monday backend --force   # replaces with just backend
+manage add table monday database          # will add database
+manage add table monday backend --force   # will replace with a single theme backend
 ```
+
+#### Adding priorities
+
+```bash
+manage add priority <p1> [p2 ...]
+```
+
+Adds priorities to the end of `priority_order` if they are not already there.
+
+Examples:
+
+```bash
+manage add priority S
+manage add priority S T U
+```
+
+---
+
+### `remove`
+
+Removes themes, tasks, tags, tables, and priorities.
+
+#### Removing a theme
+
+```bash
+manage remove theme <name>
+```
+
+Removes the theme along with all tasks. The theme is also removed from all tables.
+
+#### Removing a task
+
+```bash
+manage remove task <theme> <id...>
+```
+
+Removes the specified tasks. The IDs of remaining tasks are not renumbered.
+
+If none of the specified IDs are found, the command fails.
+
+#### Removing tags
+
+```bash
+manage remove tag <theme> <tags...>
+```
+
+Removes tags from the theme. If none of the specified tags are found, the command fails.
+
+#### Removing a table
+
+```bash
+manage remove table <name>
+```
+
+Removes the entire table. Themes inside it are not affected.
+
+#### Removing themes from a table
+
+```bash
+manage remove from-table <name> <themes...>
+```
+
+Removes the specified themes from the table without deleting the themes themselves.
+
+#### Removing priorities
+
+```bash
+manage remove priority <p1> [p2 ...]
+```
+
+Removes priorities from `priority_order`. You cannot remove all priorities at once.
 
 ---
 
@@ -461,18 +616,18 @@ Marks tasks as done or deletes them.
 manage do <theme> [id...] [--delete]
 ```
 
-- Without `--delete` - marks the task as done, but keeps it in the list.
-- With `--delete` - deletes the task.
-- Without `id...` - marks the last task of the topic.
+- Without `--delete` - the task is marked as done but remains in the list.
+- With `--delete` - the task is deleted.
+- Without `id...` - the last task of the theme is processed.
 
-If the topic has no tasks, or some of the given IDs do not exist, an error is printed. Other tasks are still processed.
+If there are no tasks in the theme or some of the specified IDs are not found, an error is displayed. The remaining tasks are still processed.
 
 Example:
 
 ```bash
 manage do backend 1 2 3
 manage do backend 1 --delete
-manage do backend # do latest task
+manage do backend # do the last task
 ```
 
 ---
@@ -483,7 +638,7 @@ manage do backend # do latest task
 manage set priority <theme> <value>
 ```
 
-Changes the priority of a topic.
+Changes the theme's priority. If the new priority is not in `priority_order`, a warning is displayed - the theme will not be shown in `list` until the priority is added.
 
 Example:
 
@@ -495,7 +650,7 @@ manage set priority backend A
 
 ### `list`
 
-Displays the list of topics and tasks with filtering. Empty topics are shown as a warning before the list.
+Displays a list of themes and tasks with filtering. Empty themes are output as a warning before the list.
 
 ```bash
 manage list [--priority="A B"] [--tags="tag1 tag2"] [--themes="theme1 theme2"] [--table=<name>] [--state=(todo|done|all)] [--todo] [--done] [--filter=(and|or)] [--code]
@@ -503,29 +658,29 @@ manage list [--priority="A B"] [--tags="tag1 tag2"] [--themes="theme1 theme2"] [
 
 #### Filters
 
-- `--priority` - space-separated list of priorities.
-- `--tags` - space-separated list of tags.
-- `--themes` - space-separated list of topic names.
-- `--table` - table name (shows topics from that table).
-- `--state` - task status:
-  - `todo` - only unfinished tasks.
-  - `done` - only completed tasks.
+- `--priority` - list of priorities separated by spaces. Values are checked against `priority_order`; if absent, an error is displayed.
+- `--tags` - list of tags separated by spaces.
+- `--themes` - list of theme names separated by spaces.
+- `--table` - table name (themes from it will be shown). The table must exist, otherwise an error is displayed.
+- `--state` - task state:
+  - `todo` - only incomplete.
+  - `done` - only completed.
   - `all` - all (default).
 - `--todo` - shorthand for `--state=todo`.
 - `--done` - shorthand for `--state=done`.
 - `--filter` - logic for combining conditions:
   - `and` - all conditions must match (default).
-  - `or` - any condition is sufficient.
-- `--code` - additionally include `TODO:` comments found in the current directory.
+  - `or` - any condition matching is sufficient.
+- `--code` - additionally include `TODO:` comments from the current directory.
 
-`--table` and `--themes` are combined into a single topic-name filter.
+`--table` and `--themes` are combined into a single filter by theme names.
 
-If both `--todo` and `--done` are given, `all` is used with a warning.
+If both `--todo` and `--done` are specified, `all` is used with a warning.
 
 #### Sorting
 
-Topics are displayed in the priority order defined in the settings (default from `A` to `Z`).  
-Tasks are shown grouped by their topic.
+Themes are displayed in the order of priorities defined in settings (by default from `A` to `Z`).
+Tasks are displayed within their themes.
 
 #### Examples
 
@@ -539,6 +694,26 @@ manage list --code
 
 ---
 
+### `show`
+
+Displays reference information.
+
+```bash
+manage show themes
+manage show priorities
+manage show tags
+manage show theme <name>
+manage show info
+```
+
+- `themes` - all themes with priority, task counters, and tags.
+- `priorities` - priorities from `priority_order` and the themes in each of them. Also shows priorities that are not in `priority_order`.
+- `tags` - all tags and the themes they relate to.
+- `theme <name>` - theme card: priority, tags, task counters, last issued ID, tables containing this theme.
+- `info` - summary by priority: all themes grouped by priority with task counters, then total sums.
+
+---
+
 ### `sys`
 
 System information and debug commands.
@@ -549,21 +724,21 @@ manage sys conf
 manage sys conf-path
 ```
 
-- `version` - prints Tap and Manage versions.
-- `conf` - prints the raw contents of the current configuration file.
-- `conf-path` - prints the configuration file path (`~/manager_config.tess`).
+- `version` - displays Tap and Manage versions.
+- `conf` - displays the contents of the current configuration file.
+- `conf-path` - displays the path to the configuration file (`~/manager_config.tess`).
 
 ---
 
 ## Configuration
 
-The file `~/manager_config.tess` is created by `init`.  
-It uses Tessera format. You can edit it manually for bulk changes, but usually all operations are done via the CLI.
+The file `~/manager_config.tess` is created by `init`.
+It is stored in Tessera format. You can edit it manually for bulk changes, but usually all operations are performed via the CLI.
 
 Settings:
 
-- `priority_order` - the priority order (default A to Z).
-- `default_priority` - the value used when adding a topic without `--priority`.
+- `priority_order` - priority order (by default from A to Z).
+- `default_priority` - value used when adding a theme without specifying `--priority`.
 
 ---
 
@@ -573,7 +748,7 @@ MIT - details in [LICENCE](https://github.com/pt-main/manage/blob/main/LICENCE).
 
 ---
 
-**manage** is written using [tap](https://github.com/pt-main/tap), [tessera](https://github.com/pt-main/tessera), and [tycl](https://github.com/pt-main/tycl).  
+**manage** is written using [tap](https://github.com/pt-main/tap), [tessera](https://github.com/pt-main/tessera), and [tycl](https://github.com/pt-main/tycl).
 Author: Pt.
 ````
 
@@ -584,7 +759,7 @@ Author: Pt.
   "project_path": "./cmd/manage",
   "output_dir": "../build",
   "name_template": "manage-v{version}-{os}-{arch}",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "clean_before_build": true,
   "cgo_enabled": 0,
   "go_build_args": ["-trimpath", "-buildvcs=false", "-gcflags=all=-l"],
@@ -628,7 +803,7 @@ module github.com/pt-main/manage
 go 1.24.13
 
 require (
-	github.com/pt-main/tap/go v1.5.9
+	github.com/pt-main/tap/go v1.6.0
 	github.com/pt-main/tessera/impl/go v0.0.0-20261019162208-a9b257904ffd
 	github.com/pt-main/tycl v1.3.8
 )
@@ -644,8 +819,8 @@ require (
 ```
 github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203 h1:XBBHcIb256gUJtLmY22n99HaZTz+r2Z51xUPi01m3wg=
 github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203/go.mod h1:E1jcSv8FaEny+OP/5k9UxZVw9YFWGj7eI4KR/iOBqCg=
-github.com/pt-main/tap/go v1.5.9 h1:u/CZDvNfOQUcGbi87XEVhuRgIUun64TQxoO2GyJTMdY=
-github.com/pt-main/tap/go v1.5.9/go.mod h1:JhdaGAsrmcZVFSANOv8PlSuKcF0Uqx0Kad2XakiOPlM=
+github.com/pt-main/tap/go v1.6.0 h1:h2ieDRZK9NDKqDsBvKzHmYdyjFk3QFMIlAd44T54zkM=
+github.com/pt-main/tap/go v1.6.0/go.mod h1:JhdaGAsrmcZVFSANOv8PlSuKcF0Uqx0Kad2XakiOPlM=
 github.com/pt-main/tessera/impl/go v0.0.0-20261019162208-a9b257904ffd h1:+7uvVZY/7UGvGzltbaDR9nrwMdG+RpDaglNJZIIWefM=
 github.com/pt-main/tessera/impl/go v0.0.0-20261019162208-a9b257904ffd/go.mod h1:T/G2WSiqoy6OQ3u6F4HDd+ZWHdK39MUnxv/sbslwMVA=
 github.com/pt-main/tycl v1.3.8 h1:TU7/axhLYE7l3TGmbvth3AfGQOorwI5uDnSO8FxeD54=
@@ -669,168 +844,163 @@ import (
 	tap "github.com/pt-main/tap/go"
 )
 
-func Add(p *tap.Parser, s []string) error {
-	m := manager.NewManager()
-	if err := Load(m); err != nil {
-		return err
+// AddTheme: manage add theme <name> [--priority=A] [--tags="go api"] [--force]
+func (mc *ManageCli) AddTheme(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) != 1 {
+		return fmt.Errorf("❌ 'add theme' needs exactly 1 argument (name), got %v", len(s))
 	}
-	name := s[1]
+	name := s[0]
+
 	_, force := p.Flags["force"]
 
-	lenArgs := func(n int) error {
-		if len(s) != n {
-			return fmt.Errorf(
-				"❌ Invalid argument length for add: need %v, got %v",
-				n, len(s))
-		}
-		return nil
+	_tags, ok := p.Flags["tags"]
+	tags := []string{}
+	if ok && _tags != "" {
+		tags = strings.Split(_tags, " ")
 	}
 
-	switch s[0] {
-	case "theme":
-		if err := lenArgs(2); err != nil {
-			return err
-		}
-		_tags, ok := p.Flags["tags"]
-		tags := strings.Split(_tags, " ")
-		if !ok {
-			tags = make([]string, 0)
-		}
-		priority, ok := p.Flags["priority"]
-		if priority == "" {
-			priority = m.Settings.DefaultPriority
-		}
-		t := manager.NewTask(tags, priority, name)
-		if err := m.AddTheme(name, t, force); err != nil {
-			return err
-		}
-		return Save(m)
-
-	case "task":
-		if err := lenArgs(3); err != nil {
-			return err
-		}
-
-		text := s[2]
-
-		task, ok := m.Tasks[name]
-		if !ok {
-			return fmt.Errorf("❌ Invalid theme name: %v", name)
-		}
-
-		append := true
-		var to = task.Last
-		_to, ok := p.Flags["id"]
-		if ok {
-			var err error
-			to, err = strconv.Atoi(_to)
-			if err != nil {
-				return err
-			}
-			append = false
-		}
-
-		if append && !force {
-			if err := m.AddTask(name, text); err != nil {
-				return err
-			}
-		} else if !append && force {
-			added := false
-			for _, task := range task.Tasks {
-				if task.GetId() == to {
-					added = true
-					if !task.SetAbout(text) {
-						return fmt.Errorf("❌ Can't edit '%v' task about", task.Type())
-					}
-				}
-			}
-			if !added {
-				return fmt.Errorf("❌ Invalid id: %v", to)
-			}
-		} else if !append && !force {
-			added := false
-			for _, task := range task.Tasks {
-				if task.GetId() == to {
-					added = true
-					if !task.Add(text) {
-						return fmt.Errorf("❌ Can't edit '%v' task about", task.Type())
-					}
-				}
-			}
-			if !added {
-				return fmt.Errorf("❌ Invalid id: %v", to)
-			}
-		}
-
-	case "tag":
-		if len(s) < 3 {
-			return fmt.Errorf(
-				"❌ Invalid argument format for 'add tag': need 3 or more arguments, got %v",
-				len(s))
-		}
-		tags := s[2:]
-
-		task, ok := m.Tasks[name]
-		if !ok {
-			return fmt.Errorf("❌ Invalid theme name: %v", name)
-		}
-
-		add := []string{}
-		rm := []string{}
-		for _, tag := range tags {
-			if strings.HasPrefix(tag, "!") {
-				rm = append(rm, tag[1:])
-			} else {
-				add = append(add, tag)
-			}
-		}
-
-		newTags := []string{}
-		for _, tag := range task.Tags {
-			if !slices.Contains(rm, tag) {
-				newTags = append(newTags, tag)
-			}
-		}
-
-		for _, addtag := range add {
-			if !slices.Contains(newTags, addtag) {
-				newTags = append(newTags, addtag)
-			}
-		}
-
-		task.Tags = newTags
-
-	case "table":
-		if len(s) < 3 {
-			return fmt.Errorf(
-				"❌ Invalid argument format for 'add table': need 3 or more arguments, got %v",
-				len(s))
-		}
-
-		name := s[1]
-		themes := s[2:]
-		_, force := p.Flags["force"]
-
-		t, ok := m.Tables[name]
-		if !ok {
-			force = true
-		}
-
-		if force {
-			m.Tables[name] = themes
-		} else {
-			t = append(t, themes...)
-			m.Tables[name] = t
-		}
-
-	default:
-		return fmt.Errorf("❌ Invalid mode: %v", s[0])
+	priority, ok := p.Flags["priority"]
+	if !ok || priority == "" {
+		priority = m.Settings.DefaultPriority
 	}
-	return Save(m)
+
+	t := manager.NewTask(tags, priority, name)
+	if err := m.AddTheme(name, t, force); err != nil {
+		return err
+	}
+	return nil
+}
+
+// AddTask: manage add task <theme> <text> [--id=N] [--force]
+func (mc *ManageCli) AddTask(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) != 2 {
+		return fmt.Errorf("❌ 'add task' needs exactly 2 arguments (theme, text), got %v", len(s))
+	}
+	name, text := s[0], s[1]
+	_, force := p.Flags["force"]
+
+	theme, ok := m.Tasks[name]
+	if !ok {
+		return fmt.Errorf("❌ Invalid theme name: %v", name)
+	}
+
+	appendMode := true
+	var to = theme.Last
+	if _to, ok := p.Flags["id"]; ok {
+		v, err := strconv.Atoi(_to)
+		if err != nil {
+			return fmt.Errorf("❌ Invalid --id value '%v': %w", _to, err)
+		}
+		to = v
+		appendMode = false
+	}
+
+	switch {
+	case appendMode && !force:
+		if err := m.AddTask(name, text); err != nil {
+			return err
+		}
+	case !appendMode && force:
+		found := false
+		for _, task := range theme.Tasks {
+			if task.GetId() == to {
+				found = true
+				if !task.SetAbout(text) {
+					return fmt.Errorf("❌ Can't edit '%v' task about", task.Type())
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("❌ Invalid id: %v", to)
+		}
+	case !appendMode && !force:
+		found := false
+		for _, task := range theme.Tasks {
+			if task.GetId() == to {
+				found = true
+				if !task.Add(text) {
+					return fmt.Errorf("❌ Can't edit '%v' task about", task.Type())
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("❌ Invalid id: %v", to)
+		}
+	case appendMode && force:
+		return fmt.Errorf("❌ --force requires --id")
+	}
+
+	return nil
+}
+
+// AddTag: manage add tag <theme> <tags...> ]
+func (mc *ManageCli) AddTag(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) < 2 {
+		return fmt.Errorf("❌ 'add tag' needs at least 2 arguments (theme + tags), got %v", len(s))
+	}
+	name := s[0]
+	tags := s[1:]
+
+	theme, ok := m.Tasks[name]
+	if !ok {
+		return fmt.Errorf("❌ Invalid theme name: %v", name)
+	}
+
+	newTags := slices.Clone(theme.Tags)
+	for _, t := range tags {
+		if !slices.Contains(newTags, t) {
+			newTags = append(newTags, t)
+		}
+	}
+
+	theme.Tags = newTags
+	return nil
+}
+
+// AddTable: manage add table <name> <themes...> [--force]
+func (mc *ManageCli) AddTable(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) < 2 {
+		return fmt.Errorf("❌ 'add table' needs at least 2 arguments (name + themes), got %v", len(s))
+	}
+	name := s[0]
+	themes := s[1:]
+	_, force := p.Flags["force"]
+
+	t, ok := m.Tables[name]
+	if !ok {
+		force = true
+	}
+
+	if force {
+		m.Tables[name] = themes
+	} else {
+		t = append(t, themes...)
+		m.Tables[name] = t
+	}
+
+	return nil
+}
+
+// AddPriority: manage add priority <p1> [p2 ...]
+func (mc *ManageCli) AddPriority(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) < 1 {
+		return fmt.Errorf("❌ 'add priority' needs at least 1 argument, got %v", len(s))
+	}
+	for _, pr := range s {
+		if !slices.Contains(m.Settings.PriorityOrder, pr) {
+			m.Settings.PriorityOrder = append(m.Settings.PriorityOrder, pr)
+		}
+	}
+	return nil
 }
 ```
 
-## `cmd/manage/handlers.go`
+## `cmd/manage/do.go`
 
 ```go
 package main
@@ -844,11 +1014,8 @@ import (
 	"github.com/pt-main/tap/go/color"
 )
 
-func Do(p *tap.Parser, s []string) error {
-	m := manager.NewManager()
-	if err := Load(m); err != nil {
-		return err
-	}
+func (mc *ManageCli) Do(p *tap.Parser, s []string) error {
+	m := mc.C
 	theme, ok := m.Tasks[s[0]]
 	if !ok {
 		return fmt.Errorf("Invalid theme name: %v", s[0])
@@ -880,7 +1047,7 @@ func Do(p *tap.Parser, s []string) error {
 			hasError = true
 			tasks = append(tasks, id)
 			color.PrintlnColored(
-				"[?RD]🔴 Task not found[?RT]: [?RD]Invalid task id[?RT]: %v",
+				"[?RD]❌ Task not found[?RT]: [?RD]Invalid task id[?RT]: %v",
 				id)
 		}
 	}
@@ -888,7 +1055,7 @@ func Do(p *tap.Parser, s []string) error {
 	if len(s) == 1 {
 		tasks := theme.Tasks
 		if len(tasks) == 0 {
-			color.PrintColored("[?RD]🔴 Tasks not found")
+			color.PrintColored("[?RD]❌ Tasks not found")
 			hasError = true
 		} else {
 			last := tasks[len(tasks)-1]
@@ -905,7 +1072,7 @@ func Do(p *tap.Parser, s []string) error {
 	}
 
 	if hasError {
-		color.PrintColored("[?RD]🔴 Failed to do tasks[?RT]")
+		color.PrintColored("[?RD]❌ Failed to do tasks[?RT]")
 		if len(tasks) != 0 {
 			color.PrintlnColored("%v", tasks)
 		} else {
@@ -914,34 +1081,7 @@ func Do(p *tap.Parser, s []string) error {
 	} else {
 		color.PrintlnColored("[?GN]✅ Tasks done![?RT]")
 	}
-	return Save(m)
-}
-
-func Set(p *tap.Parser, s []string) error {
-	m := manager.NewManager()
-	if err := Load(m); err != nil {
-		return err
-	}
-	switch s[0] {
-	case "priority":
-		if len(s) != 3 {
-			return fmt.Errorf("Invalid args length: need 3, got %v", len(s))
-		}
-		theme, ok := m.Tasks[s[1]]
-		if !ok {
-			return fmt.Errorf("Theme not found: Invalid theme name: '%v'", theme)
-		}
-		priority := s[2]
-		theme.Priority = priority
-	default:
-		return fmt.Errorf("Invalid set command: %v", s[0])
-	}
-	return Save(m)
-}
-
-type listTheme struct {
-	text     string
-	priority string
+	return nil
 }
 ```
 
@@ -963,11 +1103,14 @@ import (
 	"github.com/pt-main/tap/go/utils"
 )
 
-func List(p *tap.Parser, s []string) error {
-	m := manager.NewManager()
-	if err := Load(m); err != nil {
-		return err
-	}
+type listTheme struct {
+	text     string
+	priority string
+}
+
+func (mc *ManageCli) List(p *tap.Parser, s []string) error {
+	m := mc.C
+	mc.NoSave = true
 
 	_table, has_table := p.Flags["table"]
 	var ok bool
@@ -983,14 +1126,21 @@ func List(p *tap.Parser, s []string) error {
 	if has_tags {
 		tags = strings.Split(_tags, " ")
 	}
+
 	_priority, has_priority := p.Flags["priority"]
 	priority := []string{}
 	if has_priority {
 		priority = strings.Split(_priority, " ")
 	}
+	for _, pr := range priority {
+		if !slices.Contains(m.Settings.PriorityOrder, pr) {
+			return fmt.Errorf("Priority is not found: %v", pr)
+		}
+	}
+
 	_themes, has_themes := p.Flags["themes"]
 	if has_themes {
-		table = append(table, strings.Split(_themes, " ")...)
+		table = append(slices.Clone(table), strings.Split(_themes, " ")...)
 	}
 
 	filter, _ := p.Flags["filter"]
@@ -1014,11 +1164,15 @@ func List(p *tap.Parser, s []string) error {
 
 	textRaw := map[string]*listTheme{}
 
+	space := func(s string) string {
+		return "|  " + strings.ReplaceAll(s, "\n", "\n|  ")
+	}
+
 	if _, has := p.Flags["code"]; has {
 		for _, task := range manager.FindTodosInDir(".") {
-			textRaw[strconv.Itoa(task.Id)] = &listTheme{
+			textRaw["[CODE]:"+strconv.Itoa(task.Id)] = &listTheme{
 				priority: m.Settings.PriorityOrder[0],
-				text:     task.Render(color.ColorEnabled),
+				text:     space(task.Render(color.ColorEnabled)),
 			}
 		}
 	}
@@ -1031,7 +1185,7 @@ func List(p *tap.Parser, s []string) error {
 			// 	"CN", color.Set("[?BCN]"+string(task.Type())+" [?CN]TASK[?RT]"),
 			// 	"", map[string]string{"": task.Render(color.ColorEnabled)},
 			// )
-			text := "- " + strings.ReplaceAll(task.Render(color.ColorEnabled), "\n", "\n  ")
+			text := space(task.Render(color.ColorEnabled))
 			tasks[strconv.Itoa(task.GetId())] = text
 			raw = append(raw, text)
 		}
@@ -1043,7 +1197,7 @@ func List(p *tap.Parser, s []string) error {
 				priority: theme.Priority,
 			}
 		} else {
-			color.PrintlnColored("[?YW]🟡 Empty theme: %v", theme.Name)
+			color.PrintlnColored("[?YW]❗️ Empty theme: %v", theme.Name)
 		}
 	}
 
@@ -1079,13 +1233,15 @@ package main
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/pt-main/manage/config"
 	"github.com/pt-main/manage/manager"
 	tap "github.com/pt-main/tap/go"
 	"github.com/pt-main/tap/go/utils"
 )
 
-var Version = "1.2.0"
+var Version = "1.3.0"
 
 const docInit = `[?GN]Initialize[?RT] config file.
 
@@ -1097,28 +1253,51 @@ const docInit = `[?GN]Initialize[?RT] config file.
   This is the first command you need to run before using any other commands.
   Warning: overwrites an existing config file.`
 
-const docAdd = `[?GN]Add[?RT] themes, tasks, tags, or tables.
+const docAddTheme = `[?GN]Add a new theme.[?RT]
 
 [?BBE]Usage:[?RT]
   [?YW]manage add theme[?RT] [?BGN]<name>[?RT] [?BBK]--priority=[?BGN]<letter>[?BBK] [?BBK]--tags=[?BGN]"tag1 tag2 ..."[?RT] [?BBK]--force[?RT]
 
+[?BBE]Flags:[?RT]
+  --priority  priority (default = settings.default_priority)
+  --tags      space-separated tags
+  --force     replace existing theme with the same name`
+
+const docAddTask = `[?GN]Add or edit a task in a theme.[?RT]
+
+[?BBE]Usage:[?RT]
   [?YW]manage add task[?RT] [?BGN]<theme>[?RT] [?BGN]<text>[?RT] [?BBK]--id=[?BGN]<num>[?BBK] [?BBK]--force[?RT]
 
+[?BBE]Description:[?RT]
+  * without --id : create new task with autoincrement id
+  * with --id    : append text to existing task
+  * with --id --force : replace text of existing task`
+
+const docAddTag = `[?GN]Add or remove tags on a theme.[?RT]
+
+[?BBE]Usage:[?RT]
   [?YW]manage add tag[?RT] [?BGN]<theme>[?RT] [?BGN]<tags...>[?RT]
 
+[?BBE]Examples:[?RT]
+  [?BE]manage add tag backend api[?RT]`
+
+const docAddTable = `[?GN]Add or update a named table of themes.[?RT]
+
+[?BBE]Usage:[?RT]
   [?YW]manage add table[?RT] [?BGN]<name>[?RT] [?BGN]<themes...>[?RT] [?BBK]--force[?RT]
 
 [?BBE]Description:[?RT]
-  * Theme: adds a new theme with optional priority and tags.
-    [?BBK]--force[?RT] replaces an existing theme.
-  * Task: adds a task to a theme. If [?BBK]--id[?RT] is given:
-      - with [?BBK]--force[?RT]: replaces the task text if [?BBK]--id[?RT] passed.
-      - without [?BBK]--force[?RT]: appends to the existing task.
-    If [?BBK]--id[?RT] is not given, creates a new task.
-  * Tag: add or remove tags. Use "[?RD]![?RT]tag" to remove a tag.
-  * Table: manages named lists of themes.
-      - without [?BBK]--force[?RT]: appends themes to the table (creates if missing).
-      - with [?BBK]--force[?RT]: replaces the whole table content.`
+  * without --force : append themes to the table (creates if missing)
+  * with    --force : replace the whole table content`
+
+const docAddPriority = `[?GN]Append priorities to the priority order.[?RT]
+
+[?BBE]Usage:[?RT]
+  [?YW]manage add priority[?RT] [?BGN]<p1>[?RT] [?BGN][p2...][?RT]
+
+[?BBE]Examples:[?RT]
+  [?BE]manage add priority S[?RT]
+  [?BE]manage add priority S T U[?RT]`
 
 const docDo = `[?GN]Mark[?RT] tasks as done or delete them.
 
@@ -1134,16 +1313,18 @@ const docDo = `[?GN]Mark[?RT] tasks as done or delete them.
   [?BE]manage do math 1 --delete[?RT]
   [?BE]manage do math [?BBK]# do last task`
 
-const docSet = `[?GN]Set[?RT] various parameters.
+const docSetPriority = `[?GN]Change the priority of a theme.[?RT]
 
 [?BBE]Usage:[?RT]
-  [?YW]manage set priority[?RT] [?BGN]<theme>[?RT] [?BGN]<A-Z>[?RT]
+  [?YW]manage set priority[?RT] [?BGN]<theme>[?RT] [?BGN]<value>[?RT]
 
 [?BBE]Description:[?RT]
-  Changes the priority of a theme. Priority determines the order in [?YW]list[?RT].
+  Changes the priority used to sort the theme in [?YW]manage list[?RT].
+  The value should be present in [?BBK]priority_order[?RT] of the config
+  (otherwise the theme won't be shown in the list).
 
 [?BBE]Examples:[?RT]
-  [?BE]manage set priority math A[?RT]
+  [?BE]manage set priority backend A[?RT]
   [?BE]manage set priority bio C[?RT]`
 
 const docList = `[?GN]List[?RT] themes and tasks with optional filters.
@@ -1178,7 +1359,108 @@ const docList = `[?GN]List[?RT] themes and tasks with optional filters.
   [?BE]manage list --done --tags=exam[?RT]
   [?BE]manage list --filter=or --tags=exam --priority=A[?RT]`
 
-func NewCli() *tap.Parser {
+const docRemoveTheme = `[?GN]Remove a theme and all its tasks.[?RT]
+
+[?BBE]Usage:[?RT]
+  [?YW]manage remove theme[?RT] [?BGN]<name>[?RT]
+
+[?BBE]Description:[?RT]
+  Deletes the theme together with its tasks.
+  The theme is also removed from every table it belongs to.`
+
+const docRemoveTask = `[?GN]Remove one or more tasks from a theme.[?RT]
+
+[?BBE]Usage:[?RT]
+  [?YW]manage remove task[?RT] [?BGN]<theme>[?RT] [?BGN]<id...>[?RT]
+
+[?BBE]Description:[?RT]
+  Deletes the given tasks. Task IDs are not renumbered,
+  so the remaining tasks keep their identifiers.`
+
+const docRemoveTag = `[?GN]Remove tags from a theme.[?RT]
+
+[?BBE]Usage:[?RT]
+  [?YW]manage remove tag[?RT] [?BGN]<theme>[?RT] [?BGN]<tags...>[?RT]
+
+[?BBE]Examples:[?RT]
+  [?BE]manage remove tag backend go[?RT]
+  [?BE]manage remove tag backend go api[?RT]`
+
+const docRemoveTable = `[?GN]Remove a named table.[?RT]
+
+[?BBE]Usage:[?RT]
+  [?YW]manage remove table[?RT] [?BGN]<name>[?RT]
+
+[?BBE]Description:[?RT]
+  Deletes the entire table. Themes inside it are not affected.`
+
+const docRemoveFromTable = `[?GN]Remove themes from a table.[?RT]
+
+[?BBE]Usage:[?RT]
+  [?YW]manage remove from-table[?RT] [?BGN]<name>[?RT] [?BGN]<themes...>[?RT]
+
+[?BBE]Examples:[?RT]
+  [?BE]manage remove from-table monday backend[?RT]`
+
+const docRemovePriority = `[?GN]Remove priorities from the priority order.[?RT]
+
+[?BBE]Usage:[?RT]
+  [?YW]manage remove priority[?RT] [?BGN]<p1>[?RT] [?BGN][p2...][?RT]
+
+[?BBE]Examples:[?RT]
+  [?BE]manage remove priority Z[?RT]
+  [?BE]manage remove priority Y Z[?RT]`
+
+const docShowThemes = `[?GN]List[?RT] all themes with priority, task counters, and tags.
+
+[?BBE]Usage:[?RT]
+  [?YW]manage show themes[?RT]
+
+[?BBE]Examples:[?RT]
+  [?BE]manage show themes[?RT]`
+
+const docShowPriorities = `[?GN]List[?RT] priorities in priority_order and the themes in each.
+
+[?BBE]Usage:[?RT]
+  [?YW]manage show priorities[?RT]
+
+[?BBE]Examples:[?RT]
+  [?BE]manage show priorities[?RT]`
+
+const docShowTags = `[?GN]List[?RT] all tags and the themes they belong to.
+
+[?BBE]Usage:[?RT]
+  [?YW]manage show tags[?RT]
+
+[?BBE]Examples:[?RT]
+  [?BE]manage show tags[?RT]`
+
+const docShowTheme = `[?GN]Show[?RT] detailed information about a single theme.
+
+[?BBE]Usage:[?RT]
+  [?YW]manage show theme[?RT] [?BGN]<name>[?RT]
+
+[?BBE]Description:[?RT]
+  Prints priority, tags, task counters, last assigned ID,
+  tables that contain the theme, and the full task list
+  with status, ID, date and description.
+
+[?BBE]Examples:[?RT]
+  [?BE]manage show theme backend[?RT]`
+
+const docShowInfo = `[?GN]Show[?RT] an overall summary, grouped by priority.
+
+[?BBE]Usage:[?RT]
+  [?YW]manage show info[?RT]
+
+[?BBE]Description:[?RT]
+  Prints every theme grouped by priority with task counters
+  and tags, then the total counters.
+
+[?BBE]Examples:[?RT]
+  [?BE]manage show info[?RT]`
+
+func NewCli(mc *ManageCli) *tap.Parser {
 	p := tap.NewParser("manage", utils.FramedTextMap("CN", "[?YW]Manage[?RT]", "", map[string]string{
 		"": `[?GN]Powerful task manager.[?RT]
 [?BBK]Supports themes, tasks and tables.[?RT]
@@ -1189,43 +1471,94 @@ func NewCli() *tap.Parser {
 [?GN]Commands:[?RT]
   init    Initialize config file
   add     Add themes, tasks, tags, or tables
+  remove
   do      Mark tasks as done
-  set     Set priorities
-  list    List tasks with filters`, []string{"-h", "help"}, tap.DefaultParserConfig())
+  set     Set any param
+  list    List tasks with filters
+  show    Show any info`, []string{"-h", "help"}, tap.DefaultParserConfig())
 
 	p.AddCommand("init", func(p *tap.Parser, s []string) error {
-		if err := Save(manager.NewManager()); err != nil {
+		if err := config.Save(manager.NewManager()); err != nil {
 			return err
 		}
+		mc.NoSave = true
 		return nil
 	}, docInit, nil, nil, false)
 
-	p.AddCommand("add", Add, docAdd, []string{"mode", "arg"}, nil, true)
+	add := tap.NewParser("add", "[?GN]Add[?RT] themes, tasks, tags, tables, or priorities.",
+		[]string{"-h", "help"}, tap.DefaultParserConfig())
 
-	p.AddCommand("do", Do, docDo, []string{"theme"}, nil, true)
+	add.AddCommand("theme", mc.AddTheme, docAddTheme, []string{"name"}, nil, false)
+	add.AddCommand("task", mc.AddTask, docAddTask, []string{"theme", "text"}, nil, false)
+	add.AddCommand("tag", mc.AddTag, docAddTag, []string{"theme", "tags"}, nil, true)
+	add.AddCommand("table", mc.AddTable, docAddTable, []string{"name", "themes"}, nil, true)
+	add.AddCommand("priority", mc.AddPriority, docAddPriority, []string{"priorities"}, nil, true)
 
-	p.AddCommand("set", Set, docSet, nil, nil, true)
+	p.AddSubcommand("add", add)
 
-	p.AddCommand("list", List, docList, nil, nil, false)
+	p.AddCommand("do", mc.Do, docDo, []string{"theme"}, nil, true)
 
-	sys := tap.NewParser("sys", "system info and debug", []string{"-h", "help"}, tap.DefaultParserConfig())
+	remove := tap.NewParser("remove", "[?GN]Remove[?RT] themes, tasks, tags, tables, or priorities.",
+		[]string{"-h", "help"}, tap.DefaultParserConfig())
+
+	remove.AddCommand("theme", mc.RemoveTheme, docRemoveTheme, []string{"name"}, nil, false)
+	remove.AddCommand("task", mc.RemoveTask, docRemoveTask, []string{"theme", "ids"}, nil, true)
+	remove.AddCommand("tag", mc.RemoveTag, docRemoveTag, []string{"theme", "tags"}, nil, true)
+	remove.AddCommand("table", mc.RemoveTable, docRemoveTable, []string{"name"}, nil, false)
+	remove.AddCommand("from-table", mc.RemoveFromTable, docRemoveFromTable, []string{"name", "themes"}, nil, true)
+	remove.AddCommand("priority", mc.RemovePriority, docRemovePriority, []string{"priorities"}, nil, true)
+
+	p.AddSubcommand("remove", remove)
+
+	p.AddCommand("list", mc.List, docList, nil, nil, false)
+
+	show := tap.NewParser(
+		"show",
+		"[?GN]Show[?RT] themes, priorities, tags, or a detailed theme card.",
+		[]string{"-h", "help"},
+		tap.DefaultParserConfig(),
+	)
+	show.AddCommand("themes", mc.ShowThemes, docShowThemes, nil, nil, false)
+	show.AddCommand("priorities", mc.ShowPriorities, docShowPriorities, nil, nil, false)
+	show.AddCommand("tags", mc.ShowTags, docShowTags, nil, nil, false)
+	show.AddCommand("theme", mc.ShowTheme, docShowTheme, []string{"name"}, nil, false)
+	show.AddCommand("info", mc.ShowInfo, docShowInfo, nil, nil, false)
+
+	p.AddSubcommand("show", show)
+
+	set := tap.NewParser(
+		"set",
+		"[?GN]Set[?RT] various parameters.",
+		[]string{"-h", "help"},
+		tap.DefaultParserConfig(),
+	)
+	set.AddCommand("priority", mc.SetPriority, docSetPriority, []string{"theme", "value"}, nil, false)
+
+	p.AddSubcommand("set", set)
+
+	p.AddCommand("list", mc.List, docList, nil, nil, false)
+
+	sys := tap.NewParser("sys", "System info and debug", []string{"-h", "help"}, tap.DefaultParserConfig())
 
 	sys.AddCommand("version", func(p *tap.Parser, s []string) error {
+		mc.NoSave = true
 		fmt.Printf("Tap v%v, Manage v%v\n", tap.Version, Version)
 		return nil
 	}, "Show version", nil, nil, false)
 
 	sys.AddCommand("conf", func(p *tap.Parser, s []string) error {
-		file, err := GetConf()
+		mc.NoSave = true
+		file, err := config.GetConf()
 		if err != nil {
 			return err
 		}
-		println(file)
+		fmt.Println(file)
 		return nil
 	}, "Show config", nil, nil, false)
 
 	sys.AddCommand("conf-path", func(p *tap.Parser, s []string) error {
-		println("~/" + ConfigFile)
+		mc.NoSave = true
+		fmt.Println("~/" + config.ConfigFile)
 		return nil
 	}, "Show config", nil, nil, false)
 
@@ -1235,94 +1568,574 @@ func NewCli() *tap.Parser {
 }
 
 func main() {
-	err := NewCli().Main()
+	m := manager.NewManager()
+	err := config.Load(m)
+	if err != nil && len(os.Args) > 1 && os.Args[1] != "init" {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	mc := &ManageCli{
+		C:      m,
+		NoSave: false,
+	}
+	err = NewCli(mc).Main()
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
+	}
+	if !mc.NoSave {
+		err = config.Save(mc.C)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
 }
 ```
 
-## `cmd/manage/utils.go`
+## `cmd/manage/remove.go`
 
 ```go
 package main
 
 import (
 	"fmt"
-	"os"
+	"slices"
+	"strconv"
 
-	"github.com/pt-main/manage/config"
 	"github.com/pt-main/manage/manager"
-	"github.com/pt-main/tycl/utils"
+	tap "github.com/pt-main/tap/go"
+	"github.com/pt-main/tap/go/color"
 )
 
-func Hd() string {
-	hd, err := os.UserHomeDir()
-	if err != nil {
-		panic("Can't find to user home dir: " + err.Error())
+// RemoveTheme: manage remove theme <name>
+func (mc *ManageCli) RemoveTheme(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) != 1 {
+		return fmt.Errorf("❌ 'remove theme' needs exactly 1 argument (name), got %v", len(s))
 	}
-	return hd
+	name := s[0]
+
+	if _, ok := m.Tasks[name]; !ok {
+		return fmt.Errorf("❌ Invalid theme name: %v", name)
+	}
+	delete(m.Tasks, name)
+
+	for tableName, themes := range m.Tables {
+		newThemes := []string{}
+		removed := false
+		for _, t := range themes {
+			if t == name {
+				removed = true
+				continue
+			}
+			newThemes = append(newThemes, t)
+		}
+		if removed {
+			m.Tables[tableName] = newThemes
+		}
+	}
+
+	return nil
 }
 
-var backTo = ""
+// RemoveTask: manage remove task <theme> <id...>
+func (mc *ManageCli) RemoveTask(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) < 2 {
+		return fmt.Errorf("❌ 'remove task' needs at least 2 arguments (theme + ids), got %v", len(s))
+	}
+	name := s[0]
 
-func ToHd() {
-	var err error
-	backTo, err = os.Getwd()
-	if err != nil {
-		panic("Can't get current dir: " + err.Error())
+	theme, ok := m.Tasks[name]
+	if !ok {
+		return fmt.Errorf("❌ Invalid theme name: %v", name)
 	}
-	err = os.Chdir(Hd())
-	if err != nil {
-		panic("Can't go to user home dir: " + err.Error())
+
+	ids := make(map[int]bool)
+	for _, idStr := range s[1:] {
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			return fmt.Errorf("❌ Invalid task id '%v': %w", idStr, err)
+		}
+		ids[id] = true
 	}
+
+	newTasks := []manager.TaskData{}
+	removed := 0
+	for _, task := range theme.Tasks {
+		if ids[task.GetId()] {
+			removed++
+			continue
+		}
+		newTasks = append(newTasks, task)
+	}
+	theme.Tasks = newTasks
+
+	if removed == 0 {
+		return fmt.Errorf("❌ No tasks removed (none of the given ids exist in theme '%v')", name)
+	}
+	if removed < len(ids) {
+		color.PrintlnColored("[?YW]❗️ Some ids were not found in theme: %v", name)
+	}
+
+	return nil
 }
 
-func BackFromHd() {
-	err := os.Chdir(backTo)
-	if err != nil {
-		panic("Can't back to previous dir: " + err.Error())
+// RemoveTag: manage remove tag <theme> <tags...>
+func (mc *ManageCli) RemoveTag(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) < 2 {
+		return fmt.Errorf("❌ 'remove tag' needs at least 2 arguments (theme + tags), got %v", len(s))
 	}
-	backTo = ""
+	name := s[0]
+	toRemove := s[1:]
+
+	theme, ok := m.Tasks[name]
+	if !ok {
+		return fmt.Errorf("❌ Invalid theme name: %v", name)
+	}
+
+	newTags := []string{}
+	removedAny := false
+	for _, t := range theme.Tags {
+		if slices.Contains(toRemove, t) {
+			removedAny = true
+			continue
+		}
+		newTags = append(newTags, t)
+	}
+	if !removedAny {
+		return fmt.Errorf("❌ No tags removed (none of the given tags exist on theme '%v')", name)
+	}
+	theme.Tags = newTags
+
+	return nil
 }
 
-var ConfigFile = "manager_config.tess"
-
-func Save(m *manager.Manager) error {
-	file, err := config.GenCfg(m)
-	if err != nil {
-		return fmt.Errorf("❗️ Save data: %v", err)
+// RemoveTable: manage remove table <name>
+func (mc *ManageCli) RemoveTable(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) != 1 {
+		return fmt.Errorf("❌ 'remove table' needs exactly 1 argument (name), got %v", len(s))
 	}
-	ToHd()
-	err = utils.WriteF(ConfigFile, file)
-	BackFromHd()
-	return err
+	name := s[0]
+
+	if _, ok := m.Tables[name]; !ok {
+		return fmt.Errorf("❌ Invalid table name: %v", name)
+	}
+	delete(m.Tables, name)
+
+	return nil
 }
 
-func GetConf() (string, error) {
-	ToHd()
-	file, err := utils.OpenF(ConfigFile)
-	if err != nil {
-		return "", fmt.Errorf("❗️ Load data: %v. Do you forget to use init?", err)
+// RemoveFromTable: manage remove from-table <name> <themes...>
+func (mc *ManageCli) RemoveFromTable(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) < 2 {
+		return fmt.Errorf("❌ 'remove from-table' needs at least 2 arguments (name + themes), got %v", len(s))
 	}
-	BackFromHd()
-	return file, nil
+	name := s[0]
+	toRemove := s[1:]
+
+	themes, ok := m.Tables[name]
+	if !ok {
+		return fmt.Errorf("❌ Invalid table name: %v", name)
+	}
+
+	newThemes := []string{}
+	removedAny := false
+	for _, t := range themes {
+		if slices.Contains(toRemove, t) {
+			removedAny = true
+			continue
+		}
+		newThemes = append(newThemes, t)
+	}
+	if !removedAny {
+		return fmt.Errorf("❌ No themes removed (none of the given names are in table '%v')", name)
+	}
+	m.Tables[name] = newThemes
+
+	return nil
 }
 
-func Load(m *manager.Manager) error {
-	file, err := GetConf()
-	if err != nil {
-		return err
+// RemovePriority: manage remove priority <p1> [p2...]
+func (mc *ManageCli) RemovePriority(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) < 1 {
+		return fmt.Errorf("❌ 'remove priority' needs at least 1 argument, got %v", len(s))
 	}
-	err = config.GenManager(file, m)
-	if err != nil {
-		return err
+
+	newOrder := []string{}
+	for _, pr := range m.Settings.PriorityOrder {
+		if !slices.Contains(s, pr) {
+			newOrder = append(newOrder, pr)
+		}
+	}
+	if len(newOrder) == 0 {
+		return fmt.Errorf("❌ Can't remove all priorities (at least one must remain)")
+	}
+	if len(newOrder) == len(m.Settings.PriorityOrder) {
+		return fmt.Errorf("❌ No priorities removed (none of the given values exist)")
+	}
+	m.Settings.PriorityOrder = newOrder
+
+	return nil
+}
+```
+
+## `cmd/manage/set.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"slices"
+	"strings"
+
+	tap "github.com/pt-main/tap/go"
+	"github.com/pt-main/tap/go/color"
+)
+
+// SetPriority: manage set priority <theme> <value>
+func (mc *ManageCli) SetPriority(p *tap.Parser, s []string) error {
+	m := mc.C
+	if len(s) != 2 {
+		return fmt.Errorf("❌ 'set priority' needs exactly 2 arguments (theme, value), got %v", len(s))
+	}
+	name, priority := s[0], s[1]
+
+	if priority == "" {
+		return fmt.Errorf("❌ priority can't be empty")
+	}
+	if strings.ContainsRune(priority, ' ') {
+		return fmt.Errorf("❌ priority can't contain spaces: %q", priority)
+	}
+
+	theme, ok := m.Tasks[name]
+	if !ok {
+		return fmt.Errorf("❌ Invalid theme name: %v", name)
+	}
+
+	theme.Priority = priority
+
+	if !slices.Contains(m.Settings.PriorityOrder, priority) {
+		color.PrintlnColored(
+			"[?YW]⚠ priority '%v' is not in priority_order - theme won't appear in 'list'[?RT]",
+			priority,
+		)
+		color.PrintlnColored(
+			"[?BBK]add it with: [?YW]manage add priority %v[?RT]",
+			priority,
+		)
 	}
 	return nil
 }
 ```
 
-## `manager/find.go`
+## `cmd/manage/show.go`
+
+```go
+package main
+
+import (
+	"fmt"
+	"maps"
+	"slices"
+	"strings"
+
+	"github.com/pt-main/manage/manager"
+	tap "github.com/pt-main/tap/go"
+	"github.com/pt-main/tap/go/color"
+)
+
+// ---------- show themes ----------
+
+func (mc *ManageCli) ShowThemes(p *tap.Parser, s []string) error {
+	m := mc.C
+	mc.NoSave = true
+
+	if len(m.Tasks) == 0 {
+		color.PrintlnColored("[?RD]❗️ Has no themes[?RT]")
+		return nil
+	}
+
+	themes := make([]*manager.Task, 0, len(m.Tasks))
+	for _, t := range m.Tasks {
+		themes = append(themes, t)
+	}
+	slices.SortFunc(themes, func(a, b *manager.Task) int {
+		ai, bi := priorityIndex(m, a.Priority), priorityIndex(m, b.Priority)
+		if ai != bi {
+			return ai - bi
+		}
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	color.PrintlnColored("[?BGN]Themes:[?RT]")
+	fmt.Println()
+	for _, theme := range themes {
+		done := 0
+		for _, t := range theme.Tasks {
+			if t.IsDone() {
+				done++
+			}
+		}
+		color.PrintlnColored(
+			"  [?YW]%v[?RT] [?BBK][%v][?RT] - [?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo) %v",
+			theme.Name, theme.Priority,
+			len(theme.Tasks), done, len(theme.Tasks)-done,
+			formatTags(theme.Tags),
+		)
+	}
+	return nil
+}
+
+// ---------- show priorities ----------
+
+func (mc *ManageCli) ShowPriorities(p *tap.Parser, s []string) error {
+	m := mc.C
+	mc.NoSave = true
+
+	byPrio := map[string][]string{}
+	for name, theme := range m.Tasks {
+		byPrio[theme.Priority] = append(byPrio[theme.Priority], name)
+	}
+	for _, v := range byPrio {
+		slices.Sort(v)
+	}
+
+	color.PrintlnColored("[?BGN]Priorities (in priority_order):[?RT]")
+	fmt.Println()
+	for _, prio := range m.Settings.PriorityOrder {
+		themes, ok := byPrio[prio]
+		if !ok || len(themes) == 0 {
+			color.PrintlnColored("  [?YW]%v[?RT] [?BBK](no themes)[?RT]", prio)
+			continue
+		}
+		color.PrintlnColored(
+			"  [?YW]%v[?RT] - [?BGN]%v[?RT] theme(s): %v",
+			prio, len(themes), strings.Join(themes, ", "),
+		)
+	}
+
+	unknown := []string{}
+	for prio := range byPrio {
+		if !slices.Contains(m.Settings.PriorityOrder, prio) {
+			unknown = append(unknown, prio)
+		}
+	}
+	if len(unknown) > 0 {
+		slices.Sort(unknown)
+		fmt.Println()
+		color.PrintlnColored("[?BGN]Unknown priorities (not in priority_order):[?RT]")
+		fmt.Println()
+		for _, prio := range unknown {
+			color.PrintlnColored(
+				"  [?RD]%v[?RT] - [?BGN]%v[?RT] theme(s): %v",
+				prio, len(byPrio[prio]), strings.Join(byPrio[prio], ", "),
+			)
+		}
+	}
+
+	return nil
+}
+
+// ---------- show tags ----------
+
+func (mc *ManageCli) ShowTags(p *tap.Parser, s []string) error {
+	m := mc.C
+	mc.NoSave = true
+
+	tagThemes := map[string][]string{}
+	for name, theme := range m.Tasks {
+		for _, tag := range theme.Tags {
+			tagThemes[tag] = append(tagThemes[tag], name)
+		}
+	}
+
+	if len(tagThemes) == 0 {
+		color.PrintlnColored("[?RD]❗️ Has no tags[?RT]")
+		return nil
+	}
+
+	tags := slices.Collect(maps.Keys(tagThemes))
+	slices.Sort(tags)
+
+	color.PrintlnColored("[?BGN]Tags:[?RT]")
+	fmt.Println()
+	for _, tag := range tags {
+		themes := tagThemes[tag]
+		slices.Sort(themes)
+		color.PrintlnColored(
+			"  [?CN]#%v[?RT] - [?BGN]%v[?RT] theme(s): %v",
+			tag, len(themes), strings.Join(themes, ", "),
+		)
+	}
+	return nil
+}
+
+// ---------- show theme <name> ----------
+
+func (mc *ManageCli) ShowTheme(p *tap.Parser, s []string) error {
+	m := mc.C
+	mc.NoSave = true
+
+	if len(s) != 1 {
+		return fmt.Errorf("❌ 'show theme' needs exactly 1 argument (theme name), got %v", len(s))
+	}
+	theme, ok := m.Tasks[s[0]]
+	if !ok {
+		return fmt.Errorf("❌ Invalid theme name: %v", s[0])
+	}
+
+	total := len(theme.Tasks)
+	doneCount := 0
+	for _, t := range theme.Tasks {
+		if t.IsDone() {
+			doneCount++
+		}
+	}
+
+	color.PrintlnColored("[?BGN]--- Theme: %v ---[?RT]", theme.Name)
+	fmt.Println()
+	color.PrintlnColored("[?YW]Priority:[?RT] [?BGN]%v[?RT]", theme.Priority)
+	color.PrintlnColored("[?YW]Tags:[?RT]     %v", formatTags(theme.Tags))
+	color.PrintlnColored(
+		"[?YW]Tasks:[?RT]    [?BGN]%v[?RT] total, [?GN]%v[?RT] done, [?RD]%v[?RT] todo",
+		total, doneCount, total-doneCount,
+	)
+	color.PrintlnColored("[?YW]Last ID:[?RT]  [?BGN]%v[?RT]", theme.Last)
+
+	if inTables := tablesForTheme(m, theme.Name); len(inTables) > 0 {
+		color.PrintlnColored("[?YW]Tables:[?RT]   %v", strings.Join(inTables, ", "))
+	}
+	fmt.Println()
+
+	return nil
+}
+
+// ---------- show info ----------
+
+func (mc *ManageCli) ShowInfo(p *tap.Parser, s []string) error {
+	m := mc.C
+	mc.NoSave = true
+
+	if len(m.Tasks) == 0 {
+		color.PrintlnColored("[?RD]❗️ Has no themes[?RT]")
+		return nil
+	}
+
+	byPriority := map[string][]*manager.Task{}
+	for _, theme := range m.Tasks {
+		byPriority[theme.Priority] = append(byPriority[theme.Priority], theme)
+	}
+	for _, list := range byPriority {
+		slices.SortFunc(list, func(a, b *manager.Task) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+	}
+
+	totalThemes, totalTasks, totalDone := 0, 0, 0
+
+	printGroup := func(priority string, themes []*manager.Task) {
+		color.PrintlnColored("[?BGN]--- Priority %v ---[?RT]", priority)
+		fmt.Println()
+		for _, theme := range themes {
+			totalThemes++
+			done := 0
+			for _, t := range theme.Tasks {
+				if t.IsDone() {
+					done++
+				}
+			}
+			totalTasks += len(theme.Tasks)
+			totalDone += done
+			color.PrintlnColored(
+				"  [?YW]%v[?RT] - [?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo) %v",
+				theme.Name, len(theme.Tasks), done, len(theme.Tasks)-done,
+				formatTags(theme.Tags),
+			)
+		}
+		fmt.Println()
+	}
+
+	shown := map[string]bool{}
+	for _, priority := range m.Settings.PriorityOrder {
+		list, ok := byPriority[priority]
+		if !ok || len(list) == 0 {
+			continue
+		}
+		shown[priority] = true
+		printGroup(priority, list)
+	}
+
+	remaining := []string{}
+	for priority := range byPriority {
+		if !shown[priority] && len(byPriority[priority]) > 0 {
+			remaining = append(remaining, priority)
+		}
+	}
+	slices.Sort(remaining)
+	for _, priority := range remaining {
+		printGroup(priority+" (not in priority_order)", byPriority[priority])
+	}
+
+	color.PrintlnColored(
+		"[?BGN]Total:[?RT] [?BGN]%v[?RT] themes, [?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo)",
+		totalThemes, totalTasks, totalDone, totalTasks-totalDone,
+	)
+	return nil
+}
+
+// ---------- helpers ----------
+
+func priorityIndex(m *manager.Manager, priority string) int {
+	if i := slices.Index(m.Settings.PriorityOrder, priority); i != -1 {
+		return i
+	}
+	return len(m.Settings.PriorityOrder)
+}
+
+func tablesForTheme(m *manager.Manager, name string) []string {
+	result := []string{}
+	for tableName, themes := range m.Tables {
+		if slices.Contains(themes, name) {
+			result = append(result, tableName)
+		}
+	}
+	slices.Sort(result)
+	return result
+}
+
+func formatTags(tags []string) string {
+	if len(tags) == 0 {
+		return "[?BBK]<no tags>[?RT]"
+	}
+	parts := make([]string, len(tags))
+	for i, t := range tags {
+		parts[i] = fmt.Sprintf("[?CN]#%v[?RT]", t)
+	}
+	return strings.Join(parts, " ")
+}
+```
+
+## `cmd/manage/struct.go`
+
+```go
+package main
+
+import "github.com/pt-main/manage/manager"
+
+type ManageCli struct {
+	C      *manager.Manager
+	NoSave bool
+}
+```
+
+## `manager/code.go`
 
 ```go
 package manager
@@ -1355,7 +2168,7 @@ func (ct *CodeTask) Type() TaskDataType { return CodeTaskT }
 
 func (ct *CodeTask) Render(colored bool) string {
 	res := fmt.Sprintf(
-		"[?BBK]CODE:[?BYW]TODO [?CN][f:[?GN]%v[?CN]] [?BBK](l:[?GN]%v[?BBK])[?RT]:",
+		"[?BBK]CODE:[?BYW]TODO [?CN]f:[[?GN]%v:%v[?CN]][?RT]:",
 		ct.File, ct.CodeLine,
 	)
 	if colored {
@@ -1515,8 +2328,12 @@ func FindTodosInDir(dir string) []*CodeTask {
 		if result[i].File != result[j].File {
 			return result[i].File < result[j].File
 		}
-		return result[i].CodeLine < result[j].CodeLine
+		if result[i].CodeLine != result[j].CodeLine {
+			return result[i].CodeLine < result[j].CodeLine
+		}
+		return result[i].About < result[j].About
 	})
+
 	for i, t := range result {
 		t.Id = i
 	}
@@ -1625,7 +2442,7 @@ func (ot *OneTask) Type() TaskDataType {
 }
 
 func (ot *OneTask) Render(colored bool) string {
-	status := "TOOO"
+	status := "TODO"
 	if ot.Done {
 		status = "DONE"
 	}
@@ -1762,7 +2579,7 @@ func (m *Manager) AddTheme(name string, task *Task, force bool) error {
 	if err := m.hasTheme(name); err == nil && !force {
 		return fmt.Errorf(
 			"Can't replace theme (theme %v is already created), use force flag for replace",
-			force)
+			name)
 	}
 	m.Tasks[name] = task
 	return nil
@@ -1829,7 +2646,8 @@ func (m *Manager) Filter(tags, priority, table []string, state, filtering string
 		defaultValue = false
 	}
 	filtered := []*Task{}
-	for name, task := range m.Tasks {
+	for name, _task := range m.Tasks {
+		task := *_task
 		add := false
 		activated := false
 		if len(tags) != 0 || len(priority) != 0 || len(table) != 0 {
@@ -1884,7 +2702,7 @@ func (m *Manager) Filter(tags, priority, table []string, state, filtering string
 				}
 			}
 			task.Tasks = tasks
-			filtered = append(filtered, task)
+			filtered = append(filtered, &task)
 		}
 	}
 	return filtered
@@ -1915,7 +2733,7 @@ import (
 	tessera "github.com/pt-main/tessera/impl/go"
 )
 
-func Load(cfg *tessera.Config, m *manager.Manager) {
+func LoadC(cfg *tessera.Config, m *manager.Manager) {
 	if m.Settings == nil {
 		m.Settings = &manager.Settings{}
 	}
@@ -2003,7 +2821,7 @@ func Load(cfg *tessera.Config, m *manager.Manager) {
 	}
 }
 
-func Save(m *manager.Manager) *tessera.Config {
+func SaveC(m *manager.Manager) *tessera.Config {
 	cfg := &tessera.Config{
 		Inners: make(map[string]*tessera.Config),
 	}
@@ -2067,7 +2885,7 @@ func Save(m *manager.Manager) *tessera.Config {
 }
 
 func GenCfg(m *manager.Manager) (string, error) {
-	return tessera.TryToTessera(Save(m))
+	return tessera.TryToTessera(SaveC(m))
 }
 
 func GenManager(code string, m *manager.Manager) error {
@@ -2075,7 +2893,94 @@ func GenManager(code string, m *manager.Manager) error {
 	if len(errs) > 0 {
 		return fmt.Errorf("tessera parse errors: %v", errs)
 	}
-	Load(cfg, m)
+	LoadC(cfg, m)
+	return nil
+}
+```
+
+## `config/utils.go`
+
+```go
+package config
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/pt-main/manage/manager"
+	"github.com/pt-main/tycl/utils"
+)
+
+func Hd() string {
+	hd, err := os.UserHomeDir()
+	if err != nil {
+		panic("Can't find to user home dir: " + err.Error())
+	}
+	return hd
+}
+
+var backTo = ""
+
+func ToHd() {
+	var err error
+	backTo, err = os.Getwd()
+	if err != nil {
+		panic("Can't get current dir: " + err.Error())
+	}
+	err = os.Chdir(Hd())
+	if err != nil {
+		panic("Can't go to user home dir: " + err.Error())
+	}
+}
+
+func BackFromHd() {
+	err := os.Chdir(backTo)
+	if err != nil {
+		panic("Can't back to previous dir: " + err.Error())
+	}
+	backTo = ""
+}
+
+var ConfigFile = "manager_config.tess"
+
+func Save(m *manager.Manager) error {
+	file, err := GenCfg(m)
+	if err != nil {
+		return fmt.Errorf("❗️ Save data: %v", err)
+	}
+	ToHd()
+	defer BackFromHd()
+
+	tmp := ConfigFile + ".tmp"
+	defer os.Remove(tmp)
+	if err := utils.WriteF(tmp, file); err != nil {
+		return fmt.Errorf("❗️ Save data (1): %v", err)
+	}
+	if err := os.Rename(tmp, ConfigFile); err != nil {
+		return fmt.Errorf("❗️ Save data (2): %v", err)
+	}
+	return nil
+}
+
+func GetConf() (string, error) {
+	ToHd()
+	file, err := utils.OpenF(ConfigFile)
+	if err != nil {
+		return "", fmt.Errorf("❗️ Load data: %v. Do you forget to use init?", err)
+	}
+	BackFromHd()
+	return file, nil
+}
+
+func Load(m *manager.Manager) error {
+	file, err := GetConf()
+	if err != nil {
+		return err
+	}
+	err = GenManager(file, m)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 ```

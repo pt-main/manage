@@ -8,7 +8,7 @@ import (
 	tessera "github.com/pt-main/tessera/impl/go"
 )
 
-func Load(cfg *tessera.Config, m *manager.Manager) {
+func LoadC(cfg *tessera.Config, m *manager.Manager) {
 	if m.Settings == nil {
 		m.Settings = &manager.Settings{}
 	}
@@ -96,7 +96,7 @@ func Load(cfg *tessera.Config, m *manager.Manager) {
 	}
 }
 
-func Save(m *manager.Manager) *tessera.Config {
+func SaveC(m *manager.Manager) *tessera.Config {
 	cfg := &tessera.Config{
 		Inners: make(map[string]*tessera.Config),
 	}
@@ -160,7 +160,7 @@ func Save(m *manager.Manager) *tessera.Config {
 }
 
 func GenCfg(m *manager.Manager) (string, error) {
-	return tessera.TryToTessera(Save(m))
+	return tessera.TryToTessera(SaveC(m))
 }
 
 func GenManager(code string, m *manager.Manager) error {
@@ -168,6 +168,6 @@ func GenManager(code string, m *manager.Manager) error {
 	if len(errs) > 0 {
 		return fmt.Errorf("tessera parse errors: %v", errs)
 	}
-	Load(cfg, m)
+	LoadC(cfg, m)
 	return nil
 }

@@ -9,11 +9,8 @@ import (
 	"github.com/pt-main/tap/go/color"
 )
 
-func Do(p *tap.Parser, s []string) error {
-	m := manager.NewManager()
-	if err := Load(m); err != nil {
-		return err
-	}
+func (mc *ManageCli) Do(p *tap.Parser, s []string) error {
+	m := mc.C
 	theme, ok := m.Tasks[s[0]]
 	if !ok {
 		return fmt.Errorf("Invalid theme name: %v", s[0])
@@ -45,7 +42,7 @@ func Do(p *tap.Parser, s []string) error {
 			hasError = true
 			tasks = append(tasks, id)
 			color.PrintlnColored(
-				"[?RD]🔴 Task not found[?RT]: [?RD]Invalid task id[?RT]: %v",
+				"[?RD]❌ Task not found[?RT]: [?RD]Invalid task id[?RT]: %v",
 				id)
 		}
 	}
@@ -53,7 +50,7 @@ func Do(p *tap.Parser, s []string) error {
 	if len(s) == 1 {
 		tasks := theme.Tasks
 		if len(tasks) == 0 {
-			color.PrintColored("[?RD]🔴 Tasks not found")
+			color.PrintColored("[?RD]❌ Tasks not found")
 			hasError = true
 		} else {
 			last := tasks[len(tasks)-1]
@@ -70,7 +67,7 @@ func Do(p *tap.Parser, s []string) error {
 	}
 
 	if hasError {
-		color.PrintColored("[?RD]🔴 Failed to do tasks[?RT]")
+		color.PrintColored("[?RD]❌ Failed to do tasks[?RT]")
 		if len(tasks) != 0 {
 			color.PrintlnColored("%v", tasks)
 		} else {
@@ -79,32 +76,5 @@ func Do(p *tap.Parser, s []string) error {
 	} else {
 		color.PrintlnColored("[?GN]✅ Tasks done![?RT]")
 	}
-	return Save(m)
-}
-
-func Set(p *tap.Parser, s []string) error {
-	m := manager.NewManager()
-	if err := Load(m); err != nil {
-		return err
-	}
-	switch s[0] {
-	case "priority":
-		if len(s) != 3 {
-			return fmt.Errorf("Invalid args length: need 3, got %v", len(s))
-		}
-		theme, ok := m.Tasks[s[1]]
-		if !ok {
-			return fmt.Errorf("Theme not found: Invalid theme name: '%v'", theme)
-		}
-		priority := s[2]
-		theme.Priority = priority
-	default:
-		return fmt.Errorf("Invalid set command: %v", s[0])
-	}
-	return Save(m)
-}
-
-type listTheme struct {
-	text     string
-	priority string
+	return nil
 }

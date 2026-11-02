@@ -28,7 +28,7 @@ func (ct *CodeTask) Type() TaskDataType { return CodeTaskT }
 
 func (ct *CodeTask) Render(colored bool) string {
 	res := fmt.Sprintf(
-		"[?BBK]CODE:[?BYW]TODO [?CN][f:[?GN]%v[?CN]] [?BBK](l:[?GN]%v[?BBK])[?RT]:",
+		"[?BBK]CODE:[?BYW]TODO [?CN]f:[[?GN]%v:%v[?CN]][?RT]:",
 		ct.File, ct.CodeLine,
 	)
 	if colored {
@@ -188,8 +188,12 @@ func FindTodosInDir(dir string) []*CodeTask {
 		if result[i].File != result[j].File {
 			return result[i].File < result[j].File
 		}
-		return result[i].CodeLine < result[j].CodeLine
+		if result[i].CodeLine != result[j].CodeLine {
+			return result[i].CodeLine < result[j].CodeLine
+		}
+		return result[i].About < result[j].About
 	})
+
 	for i, t := range result {
 		t.Id = i
 	}

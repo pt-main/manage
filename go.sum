@@ -1,7 +1,7 @@
 github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203 h1:XBBHcIb256gUJtLmY22n99HaZTz+r2Z51xUPi01m3wg=
 github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203/go.mod h1:E1jcSv8FaEny+OP/5k9UxZVw9YFWGj7eI4KR/iOBqCg=
-github.com/pt-main/tap/go v1.5.9 h1:u/CZDvNfOQUcGbi87XEVhuRgIUun64TQxoO2GyJTMdY=
-github.com/pt-main/tap/go v1.5.9/go.mod h1:JhdaGAsrmcZVFSANOv8PlSuKcF0Uqx0Kad2XakiOPlM=
+github.com/pt-main/tap/go v1.6.0 h1:h2ieDRZK9NDKqDsBvKzHmYdyjFk3QFMIlAd44T54zkM=
+github.com/pt-main/tap/go v1.6.0/go.mod h1:JhdaGAsrmcZVFSANOv8PlSuKcF0Uqx0Kad2XakiOPlM=
 github.com/pt-main/tessera/impl/go v0.0.0-20261019162208-a9b257904ffd h1:+7uvVZY/7UGvGzltbaDR9nrwMdG+RpDaglNJZIIWefM=
 github.com/pt-main/tessera/impl/go v0.0.0-20261019162208-a9b257904ffd/go.mod h1:T/G2WSiqoy6OQ3u6F4HDd+ZWHdK39MUnxv/sbslwMVA=
 github.com/pt-main/tycl v1.3.8 h1:TU7/axhLYE7l3TGmbvth3AfGQOorwI5uDnSO8FxeD54=
