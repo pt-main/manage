@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/pt-main/manage/manager"
@@ -74,30 +73,14 @@ func (mc *ManageCli) List(p *tap.Parser, s []string) error {
 
 	textRaw := map[string]*listTheme{}
 
-	space := func(s string) string {
-		return "|  " + strings.ReplaceAll(s, "\n", "\n|  ")
-	}
-
-	if _, has := p.Flags["code"]; has {
-		for _, task := range manager.FindTodosInDir(".") {
-			textRaw["[CODE]:"+strconv.Itoa(task.Id)] = &listTheme{
-				priority: m.Settings.PriorityOrder[0],
-				text:     space(task.Render(color.ColorEnabled)),
-			}
-		}
-	}
-
 	for _, theme := range filtered {
 		tasks := map[string]string{}
 		raw := []string{}
 		for _, task := range theme.Tasks {
-			// text := utils.FramedTextMap(
-			// 	"CN", color.Set("[?BCN]"+string(task.Type())+" [?CN]TASK[?RT]"),
-			// 	"", map[string]string{"": task.Render(color.ColorEnabled)},
-			// )
-			text := space(task.Render(color.ColorEnabled))
-			tasks[strconv.Itoa(task.GetId())] = text
-			raw = append(raw, text)
+			about := task.GetAbout()
+			tasks[task.Render(color.ColorEnabled)] =
+				"    " + strings.ReplaceAll(about, "\n", "\n    ")
+			raw = append(raw, about)
 		}
 		res := utils.FramedTextMap("CN", "TASKS", "", tasks)
 		withoutColors := color.ReplaceColors(strings.Join(raw, "\n"))

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -21,13 +22,15 @@ func (mc *ManageCli) Do(p *tap.Parser, s []string) error {
 	hasError := false
 	tasks := []int{}
 
-	do := func(id int) {
+	do := func(id int) error {
 		done := false
 		newTasks := []manager.TaskData{}
 		for _, task := range theme.Tasks {
 			if task.GetId() == id {
 				done = true
-				task.Do()
+				if err := task.Do(); err != nil {
+					return fmt.Errorf("Can't do task %v: %v", task, err)
+				}
 				if !delete {
 					newTasks = append(newTasks, task)
 				}
@@ -45,6 +48,7 @@ func (mc *ManageCli) Do(p *tap.Parser, s []string) error {
 				"[?RD]❌ Task not found[?RT]: [?RD]Invalid task id[?RT]: %v",
 				id)
 		}
+		return nil
 	}
 
 	if len(s) == 1 {
@@ -68,11 +72,15 @@ func (mc *ManageCli) Do(p *tap.Parser, s []string) error {
 
 	if hasError {
 		color.PrintColored("[?RD]❌ Failed to do tasks[?RT]")
-		if len(tasks) != 0 {
-			color.PrintlnColored("%v", tasks)
-		} else {
-			print("\n")
+		msg := ""
+		last := len(tasks) - 1
+		for idx, task := range tasks {
+			msg += strconv.Itoa(task)
+			if idx != last {
+				msg += ", "
+			}
 		}
+		return errors.New(msg)
 	} else {
 		color.PrintlnColored("[?GN]✅ Tasks done![?RT]")
 	}

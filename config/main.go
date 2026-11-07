@@ -103,6 +103,9 @@ func SaveC(m *manager.Manager) *tessera.Config {
 
 	i := 0
 	for _, task := range m.Tasks {
+		if task.Name == CODE_THEME {
+			continue
+		}
 		taskCfg := &tessera.Config{
 			Strs: map[string]string{
 				"name":     task.Name,

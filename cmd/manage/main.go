@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/pt-main/manage/config"
 	"github.com/pt-main/manage/manager"
@@ -10,7 +11,7 @@ import (
 	"github.com/pt-main/tap/go/utils"
 )
 
-var Version = "1.3.0"
+var Version = "1.4.0"
 
 const docInit = `[?GN]Initialize[?RT] config file.
 
@@ -204,15 +205,14 @@ const docShowTags = `[?GN]List[?RT] all tags and the themes they belong to.
 [?BBE]Examples:[?RT]
   [?BE]manage show tags[?RT]`
 
-const docShowTheme = `[?GN]Show[?RT] detailed information about a single theme.
+const docShowTheme = `[?GN]Show[?RT] a summary card for a single theme.
 
 [?BBE]Usage:[?RT]
   [?YW]manage show theme[?RT] [?BGN]<name>[?RT]
 
 [?BBE]Description:[?RT]
-  Prints priority, tags, task counters, last assigned ID,
-  tables that contain the theme, and the full task list
-  with status, ID, date and description.
+  Prints the theme's priority, tags, task counters (total / done / todo),
+  the last assigned task ID, and the list of tables that contain the theme.
 
 [?BBE]Examples:[?RT]
   [?BE]manage show theme backend[?RT]`
@@ -336,7 +336,8 @@ func NewCli(mc *ManageCli) *tap.Parser {
 
 func main() {
 	m := manager.NewManager()
-	err := config.Load(m)
+	has_code_flag := slices.Contains(os.Args, "--code")
+	err := config.Load(m, has_code_flag)
 	if err != nil && len(os.Args) > 1 && os.Args[1] != "init" {
 		fmt.Println(err)
 		os.Exit(1)

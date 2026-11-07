@@ -5,10 +5,12 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/pt-main/manage/manager"
 	tap "github.com/pt-main/tap/go"
 	"github.com/pt-main/tap/go/color"
+	"github.com/pt-main/tap/go/utils"
 )
 
 // ---------- show themes ----------
@@ -22,34 +24,51 @@ func (mc *ManageCli) ShowThemes(p *tap.Parser, s []string) error {
 		return nil
 	}
 
-	themes := make([]*manager.Task, 0, len(m.Tasks))
-	for _, t := range m.Tasks {
-		themes = append(themes, t)
+	byPriority := map[string][]*manager.Task{}
+	for _, theme := range m.Tasks {
+		byPriority[theme.Priority] = append(byPriority[theme.Priority], theme)
 	}
-	slices.SortFunc(themes, func(a, b *manager.Task) int {
-		ai, bi := priorityIndex(m, a.Priority), priorityIndex(m, b.Priority)
-		if ai != bi {
-			return ai - bi
-		}
-		return strings.Compare(a.Name, b.Name)
-	})
+	for _, list := range byPriority {
+		slices.SortFunc(list, func(a, b *manager.Task) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+	}
 
-	color.PrintlnColored("[?BGN]Themes:[?RT]")
-	fmt.Println()
-	for _, theme := range themes {
-		done := 0
-		for _, t := range theme.Tasks {
-			if t.IsDone() {
-				done++
-			}
+	printGroup := func(priority string, themes []*manager.Task, known bool) {
+		text := map[string]string{}
+		for _, theme := range themes {
+			text[fmt.Sprintf("[?YW]%v[?RT]", theme.Name)] = themeSummary(theme)
 		}
-		color.PrintlnColored(
-			"  [?YW]%v[?RT] [?BBK][%v][?RT] - [?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo) %v",
-			theme.Name, theme.Priority,
-			len(theme.Tasks), done, len(theme.Tasks)-done,
-			formatTags(theme.Tags),
-		)
+		title := fmt.Sprintf("[?BGN]Priority %v[?RT]", priority)
+		colorCode := "GN"
+		if !known {
+			title = fmt.Sprintf("[?RD]Priority %v (not in priority_order)[?RT]", priority)
+			colorCode = "RD"
+		}
+		color.PrintlnColored(utils.FramedTextMap(colorCode, title, "", text))
 	}
+
+	shown := map[string]bool{}
+	for _, priority := range m.Settings.PriorityOrder {
+		list, ok := byPriority[priority]
+		if !ok || len(list) == 0 {
+			continue
+		}
+		shown[priority] = true
+		printGroup(priority, list, true)
+	}
+
+	remaining := []string{}
+	for priority := range byPriority {
+		if !shown[priority] && len(byPriority[priority]) > 0 {
+			remaining = append(remaining, priority)
+		}
+	}
+	slices.Sort(remaining)
+	for _, priority := range remaining {
+		printGroup(priority, byPriority[priority], false)
+	}
+
 	return nil
 }
 
@@ -59,48 +78,135 @@ func (mc *ManageCli) ShowPriorities(p *tap.Parser, s []string) error {
 	m := mc.C
 	mc.NoSave = true
 
-	byPrio := map[string][]string{}
+	byPriority := map[string][]string{}
 	for name, theme := range m.Tasks {
-		byPrio[theme.Priority] = append(byPrio[theme.Priority], name)
+		byPriority[theme.Priority] = append(byPriority[theme.Priority], name)
 	}
-	for _, v := range byPrio {
+	for _, v := range byPriority {
 		slices.Sort(v)
 	}
 
-	color.PrintlnColored("[?BGN]Priorities (in priority_order):[?RT]")
-	fmt.Println()
-	for _, prio := range m.Settings.PriorityOrder {
-		themes, ok := byPrio[prio]
-		if !ok || len(themes) == 0 {
-			color.PrintlnColored("  [?YW]%v[?RT] [?BBK](no themes)[?RT]", prio)
+	order := m.Settings.PriorityOrder
+
+	type row struct {
+		label  string
+		themes []string
+		empty  bool
+	}
+	rows := []row{}
+	for i := 0; i < len(order); {
+		themes := byPriority[order[i]]
+		if len(themes) > 0 {
+			rows = append(rows, row{label: order[i], themes: themes})
+			i++
 			continue
 		}
-		color.PrintlnColored(
-			"  [?YW]%v[?RT] - [?BGN]%v[?RT] theme(s): %v",
-			prio, len(themes), strings.Join(themes, ", "),
-		)
+		j := i
+		for j < len(order) && len(byPriority[order[j]]) == 0 {
+			j++
+		}
+		rows = append(rows, row{label: collapseRange(order[i:j]), empty: true})
+		i = j
+	}
+
+	if len(rows) > 0 {
+		width := 0
+		for _, r := range rows {
+			if w := utf8.RuneCountInString(r.label); w > width {
+				width = w
+			}
+		}
+		lines := make([]string, 0, len(rows))
+		for _, r := range rows {
+			label := padLabel(r.label, width)
+			if r.empty {
+				lines = append(lines, fmt.Sprintf(
+					"[?YW]%s[?RT]  [?BBK](no themes)[?RT]", label,
+				))
+			} else {
+				lines = append(lines, fmt.Sprintf(
+					"[?YW]%s[?RT]  [?BGN]%d[?RT] theme(s): %s",
+					label, len(r.themes), strings.Join(r.themes, ", "),
+				))
+			}
+		}
+		color.PrintlnColored(utils.FramedTextMap(
+			"GN",
+			"[?BGN]Priority order[?RT]",
+			"",
+			map[string]string{
+				fmt.Sprintf("[?BBK]%d priorities[?RT]", len(order)): strings.Join(lines, "\n"),
+			},
+		))
 	}
 
 	unknown := []string{}
-	for prio := range byPrio {
-		if !slices.Contains(m.Settings.PriorityOrder, prio) {
-			unknown = append(unknown, prio)
+	for priority := range byPriority {
+		if !slices.Contains(order, priority) {
+			unknown = append(unknown, priority)
 		}
 	}
 	if len(unknown) > 0 {
 		slices.Sort(unknown)
-		fmt.Println()
-		color.PrintlnColored("[?BGN]Unknown priorities (not in priority_order):[?RT]")
-		fmt.Println()
-		for _, prio := range unknown {
-			color.PrintlnColored(
-				"  [?RD]%v[?RT] - [?BGN]%v[?RT] theme(s): %v",
-				prio, len(byPrio[prio]), strings.Join(byPrio[prio], ", "),
-			)
+		width := 0
+		for _, p := range unknown {
+			if w := utf8.RuneCountInString(p); w > width {
+				width = w
+			}
 		}
+		lines := make([]string, 0, len(unknown))
+		for _, priority := range unknown {
+			themes := byPriority[priority]
+			label := padLabel(priority, width)
+			lines = append(lines, fmt.Sprintf(
+				"[?RD]%s[?RT]  [?BGN]%d[?RT] theme(s): %s",
+				label, len(themes), strings.Join(themes, ", "),
+			))
+		}
+		fmt.Println()
+		color.PrintlnColored(utils.FramedTextMap(
+			"RD",
+			"[?RD]Unknown priorities[?RT]",
+			"[?BBK]not in priority_order[?RT]",
+			map[string]string{
+				fmt.Sprintf("[?RD]%d[?RT]", len(unknown)): strings.Join(lines, "\n"),
+			},
+		))
 	}
 
 	return nil
+}
+
+// collapseRange formats a run of consecutive empty priorities.
+//   - single element        -> "high"
+//   - single-letter bounds  -> "A-Z"
+//   - otherwise             -> "high..low"
+func collapseRange(ps []string) string {
+	if len(ps) == 1 {
+		return ps[0]
+	}
+	first, last := ps[0], ps[len(ps)-1]
+	if isSingleLetter(first) && isSingleLetter(last) {
+		return first + "-" + last
+	}
+	return first + ".." + last
+}
+
+func isSingleLetter(s string) bool {
+	if len(s) != 1 {
+		return false
+	}
+	c := s[0]
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+}
+
+// padLabel pads by runes, not bytes, so Cyrillic/CJK priorities stay aligned.
+func padLabel(s string, width int) string {
+	n := utf8.RuneCountInString(s)
+	if n >= width {
+		return s
+	}
+	return s + strings.Repeat(" ", width-n)
 }
 
 // ---------- show tags ----------
@@ -124,16 +230,17 @@ func (mc *ManageCli) ShowTags(p *tap.Parser, s []string) error {
 	tags := slices.Collect(maps.Keys(tagThemes))
 	slices.Sort(tags)
 
-	color.PrintlnColored("[?BGN]Tags:[?RT]")
-	fmt.Println()
+	text := map[string]string{}
 	for _, tag := range tags {
 		themes := tagThemes[tag]
 		slices.Sort(themes)
-		color.PrintlnColored(
-			"  [?CN]#%v[?RT] - [?BGN]%v[?RT] theme(s): %v",
-			tag, len(themes), strings.Join(themes, ", "),
+		text[fmt.Sprintf("[?CN]#%v[?RT]", tag)] = fmt.Sprintf(
+			"[?BGN]%v[?RT] theme(s): %v",
+			len(themes), strings.Join(themes, ", "),
 		)
 	}
+
+	color.PrintlnColored(utils.FramedTextMap("CN", "[?BGN]Tags[?RT]", "", text))
 	return nil
 }
 
@@ -151,29 +258,30 @@ func (mc *ManageCli) ShowTheme(p *tap.Parser, s []string) error {
 		return fmt.Errorf("❌ Invalid theme name: %v", s[0])
 	}
 
-	total := len(theme.Tasks)
-	doneCount := 0
+	done := 0
 	for _, t := range theme.Tasks {
 		if t.IsDone() {
-			doneCount++
+			done++
 		}
 	}
 
-	color.PrintlnColored("[?BGN]--- Theme: %v ---[?RT]", theme.Name)
-	fmt.Println()
-	color.PrintlnColored("[?YW]Priority:[?RT] [?BGN]%v[?RT]", theme.Priority)
-	color.PrintlnColored("[?YW]Tags:[?RT]     %v", formatTags(theme.Tags))
-	color.PrintlnColored(
-		"[?YW]Tasks:[?RT]    [?BGN]%v[?RT] total, [?GN]%v[?RT] done, [?RD]%v[?RT] todo",
-		total, doneCount, total-doneCount,
-	)
-	color.PrintlnColored("[?YW]Last ID:[?RT]  [?BGN]%v[?RT]", theme.Last)
+	text := map[string]string{
+		"[?YW]Priority[?RT]": fmt.Sprintf("[?BGN]%v[?RT]", theme.Priority),
+		"[?YW]Tags[?RT]":     formatTags(theme.Tags),
+		"[?YW]Tasks[?RT]": fmt.Sprintf(
+			"[?BGN]%v[?RT] total, [?GN]%v[?RT] done, [?RD]%v[?RT] todo",
+			len(theme.Tasks), done, len(theme.Tasks)-done,
+		),
+		"[?YW]Last ID[?RT]": fmt.Sprintf("[?BGN]%v[?RT]", theme.Last),
+	}
 
 	if inTables := tablesForTheme(m, theme.Name); len(inTables) > 0 {
-		color.PrintlnColored("[?YW]Tables:[?RT]   %v", strings.Join(inTables, ", "))
+		text["[?YW]Tables[?RT]"] = strings.Join(inTables, ", ")
 	}
-	fmt.Println()
 
+	color.PrintlnColored(utils.FramedTextMap(
+		"CN", fmt.Sprintf("[?BGN]Theme: %v[?RT]", theme.Name), "", text,
+	))
 	return nil
 }
 
@@ -200,9 +308,8 @@ func (mc *ManageCli) ShowInfo(p *tap.Parser, s []string) error {
 
 	totalThemes, totalTasks, totalDone := 0, 0, 0
 
-	printGroup := func(priority string, themes []*manager.Task) {
-		color.PrintlnColored("[?BGN]--- Priority %v ---[?RT]", priority)
-		fmt.Println()
+	printGroup := func(priority string, themes []*manager.Task, known bool) {
+		text := map[string]string{}
 		for _, theme := range themes {
 			totalThemes++
 			done := 0
@@ -213,13 +320,19 @@ func (mc *ManageCli) ShowInfo(p *tap.Parser, s []string) error {
 			}
 			totalTasks += len(theme.Tasks)
 			totalDone += done
-			color.PrintlnColored(
-				"  [?YW]%v[?RT] - [?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo) %v",
-				theme.Name, len(theme.Tasks), done, len(theme.Tasks)-done,
+			text[fmt.Sprintf("[?YW]%v[?RT]", theme.Name)] = fmt.Sprintf(
+				"[?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo) %v",
+				len(theme.Tasks), done, len(theme.Tasks)-done,
 				formatTags(theme.Tags),
 			)
 		}
-		fmt.Println()
+		title := fmt.Sprintf("[?BGN]Priority %v[?RT]", priority)
+		colorCode := "GN"
+		if !known {
+			title = fmt.Sprintf("[?RD]Priority %v (not in priority_order)[?RT]", priority)
+			colorCode = "RD"
+		}
+		color.PrintlnColored(utils.FramedTextMap(colorCode, title, "", text))
 	}
 
 	shown := map[string]bool{}
@@ -229,7 +342,7 @@ func (mc *ManageCli) ShowInfo(p *tap.Parser, s []string) error {
 			continue
 		}
 		shown[priority] = true
-		printGroup(priority, list)
+		printGroup(priority, list, true)
 	}
 
 	remaining := []string{}
@@ -240,24 +353,21 @@ func (mc *ManageCli) ShowInfo(p *tap.Parser, s []string) error {
 	}
 	slices.Sort(remaining)
 	for _, priority := range remaining {
-		printGroup(priority+" (not in priority_order)", byPriority[priority])
+		printGroup(priority, byPriority[priority], false)
 	}
 
-	color.PrintlnColored(
-		"[?BGN]Total:[?RT] [?BGN]%v[?RT] themes, [?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo)",
-		totalThemes, totalTasks, totalDone, totalTasks-totalDone,
-	)
+	totals := map[string]string{
+		"[?YW]Themes[?RT]": fmt.Sprintf("[?BGN]%v[?RT]", totalThemes),
+		"[?YW]Tasks[?RT]": fmt.Sprintf(
+			"[?BGN]%v[?RT] ([?GN]%v[?RT] done, [?RD]%v[?RT] todo)",
+			totalTasks, totalDone, totalTasks-totalDone,
+		),
+	}
+	color.PrintlnColored(utils.FramedTextMap("GN", "[?BGN]Total[?RT]", "", totals))
 	return nil
 }
 
 // ---------- helpers ----------
-
-func priorityIndex(m *manager.Manager, priority string) int {
-	if i := slices.Index(m.Settings.PriorityOrder, priority); i != -1 {
-		return i
-	}
-	return len(m.Settings.PriorityOrder)
-}
 
 func tablesForTheme(m *manager.Manager, name string) []string {
 	result := []string{}
@@ -279,4 +389,18 @@ func formatTags(tags []string) string {
 		parts[i] = fmt.Sprintf("[?CN]#%v[?RT]", t)
 	}
 	return strings.Join(parts, " ")
+}
+
+func themeSummary(theme *manager.Task) string {
+	done := 0
+	for _, t := range theme.Tasks {
+		if t.IsDone() {
+			done++
+		}
+	}
+	return fmt.Sprintf(
+		"[?BGN]%v[?RT] tasks ([?GN]%v[?RT] done, [?RD]%v[?RT] todo) %v",
+		len(theme.Tasks), done, len(theme.Tasks)-done,
+		formatTags(theme.Tags),
+	)
 }

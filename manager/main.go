@@ -19,7 +19,7 @@ var (
 
 type TaskData interface {
 	Type() TaskDataType
-	Render(colored bool) string
+	Render(colored bool) string // render task header
 	GetId() int
 	Do() error
 	IsDone() bool
@@ -67,7 +67,7 @@ func (ot *OneTask) Render(colored bool) string {
 	} else {
 		res = color.ReplaceColors(res)
 	}
-	return res + "\n" + ot.About
+	return res
 }
 
 func (ot *OneTask) GetId() int {

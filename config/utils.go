@@ -8,6 +8,9 @@ import (
 	"github.com/pt-main/tycl/utils"
 )
 
+const CODE_THEME = ".code"
+const CODE_PRIORITY = "A"
+
 func Hd() string {
 	hd, err := os.UserHomeDir()
 	if err != nil {
@@ -69,7 +72,7 @@ func GetConf() (string, error) {
 	return file, nil
 }
 
-func Load(m *manager.Manager) error {
+func Load(m *manager.Manager, add_code bool) error {
 	file, err := GetConf()
 	if err != nil {
 		return err
@@ -78,5 +81,15 @@ func Load(m *manager.Manager) error {
 	if err != nil {
 		return err
 	}
+
+	if add_code {
+		m.AddTheme(CODE_THEME, manager.NewTask([]string{}, CODE_PRIORITY, CODE_THEME), true)
+		for _, task := range manager.FindTodosInDir(".") {
+			theme := m.Tasks[CODE_THEME]
+			theme.Tasks = append(theme.Tasks, task)
+			theme.Last = max(task.Id, theme.Last)
+		}
+	}
+
 	return nil
 }

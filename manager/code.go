@@ -28,7 +28,7 @@ func (ct *CodeTask) Type() TaskDataType { return CodeTaskT }
 
 func (ct *CodeTask) Render(colored bool) string {
 	res := fmt.Sprintf(
-		"[?BBK]CODE:[?BYW]TODO [?CN]f:[[?GN]%v:%v[?CN]][?RT]:",
+		"[?BBK]CODE:[?BYW]TODO [?CN]f:[[?GN]%v:%v[?CN]][?RT]",
 		ct.File, ct.CodeLine,
 	)
 	if colored {
@@ -36,7 +36,7 @@ func (ct *CodeTask) Render(colored bool) string {
 	} else {
 		res = color.ReplaceColors(res)
 	}
-	return res + "\n" + ct.About
+	return res
 }
 
 func (ct *CodeTask) GetId() int       { return ct.Id }
