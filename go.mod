@@ -3,7 +3,7 @@ module github.com/pt-main/manage
 go 1.26.0
 
 require (
-	github.com/pt-main/tap/go v1.7.0
+	github.com/pt-main/tap/go v1.7.1
 	github.com/pt-main/tessera/impl/go v0.0.0-20261019162208-a9b257904ffd
 	github.com/pt-main/tycl v1.3.8
 )

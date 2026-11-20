@@ -79,7 +79,7 @@ func (mc *ManageCli) List(p *tap.Parser, s []string) error {
 		raw := []string{}
 		for _, task := range theme.Tasks {
 			about := task.GetAbout()
-			about = utils.CutTextForWidth(mc.TermWidth-offset, about)
+			// about = utils.CutTextForWidth(mc.TermWidth-offset, about)
 			text := "    " + strings.ReplaceAll(about, "\n", "\n    ")
 			tasks[task.Render(color.ColorEnabled)] = text
 			raw = append(raw, about)
