@@ -106,8 +106,8 @@ func (mc *ManageCli) List(p *tap.Parser, s []string) error {
 		}
 		if len(slices.Collect(maps.Keys(text))) != 0 {
 			printed += 1
-			color.PrintlnColored(utils.FramedTextMap(
-				"GN", fmt.Sprintf("[?BGN]Priority %v[?RT]", priority), "", text,
+			color.PrintlnColored(utils.FramedTextMapWithPadding(
+				"GN", fmt.Sprintf("[?BGN]Priority %v[?RT]", priority), "", 0, text,
 			))
 		}
 	}
