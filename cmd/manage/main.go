@@ -9,9 +9,10 @@ import (
 	"github.com/pt-main/manage/manager"
 	tap "github.com/pt-main/tap/go"
 	"github.com/pt-main/tap/go/utils"
+	"golang.org/x/term"
 )
 
-var Version = "1.4.0"
+var Version = "1.5.0"
 
 const docInit = `[?GN]Initialize[?RT] config file.
 
@@ -232,9 +233,7 @@ const docShowInfo = `[?GN]Show[?RT] an overall summary, grouped by priority.
 func NewCli(mc *ManageCli) *tap.Parser {
 	p := tap.NewParser("manage", utils.FramedTextMap("CN", "[?YW]Manage[?RT]", "", map[string]string{
 		"": `[?GN]Powerful task manager.[?RT]
-[?BBK]Supports themes, tasks and tables.[?RT]
-[?BBK]Very good for education, but is also 
-[?BBK]useful for other tasks.[?RT]`,
+[?BBK]Supports themes, tasks and tables. Very good for education, but it also useful for other tasks.[?RT]`,
 	})+`
 
 [?GN]Commands:[?RT]
@@ -342,9 +341,14 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		width = -1
+	}
 	mc := &ManageCli{
-		C:      m,
-		NoSave: false,
+		C:         m,
+		NoSave:    false,
+		TermWidth: width,
 	}
 	err = NewCli(mc).Main()
 	if err != nil {

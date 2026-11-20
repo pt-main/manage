@@ -73,13 +73,15 @@ func (mc *ManageCli) List(p *tap.Parser, s []string) error {
 
 	textRaw := map[string]*listTheme{}
 
+	const offset = 12 // text left offset for cutting
 	for _, theme := range filtered {
 		tasks := map[string]string{}
 		raw := []string{}
 		for _, task := range theme.Tasks {
 			about := task.GetAbout()
-			tasks[task.Render(color.ColorEnabled)] =
-				"    " + strings.ReplaceAll(about, "\n", "\n    ")
+			about = utils.CutTextForWidth(mc.TermWidth-offset, about)
+			text := "    " + strings.ReplaceAll(about, "\n", "\n    ")
+			tasks[task.Render(color.ColorEnabled)] = text
 			raw = append(raw, about)
 		}
 		res := utils.FramedTextMap("CN", "TASKS", "", tasks)
@@ -94,8 +96,7 @@ func (mc *ManageCli) List(p *tap.Parser, s []string) error {
 		}
 	}
 
-	outed := 0
-
+	printed := 0
 	for _, priority := range m.Settings.PriorityOrder {
 		text := map[string]string{}
 		for name, theme := range textRaw {
@@ -104,14 +105,14 @@ func (mc *ManageCli) List(p *tap.Parser, s []string) error {
 			}
 		}
 		if len(slices.Collect(maps.Keys(text))) != 0 {
-			outed += 1
+			printed += 1
 			color.PrintlnColored(utils.FramedTextMap(
 				"GN", fmt.Sprintf("[?BGN]Priority %v[?RT]", priority), "", text,
 			))
 		}
 	}
 
-	if outed == 0 {
+	if printed == 0 {
 		color.PrintlnColored("[?RD]❗️ Has no themes[?RT]")
 	}
 
