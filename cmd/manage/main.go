@@ -12,7 +12,7 @@ import (
 	"golang.org/x/term"
 )
 
-var Version = "1.5.0"
+var Version = "1.5.1"
 
 const docInit = `[?GN]Initialize[?RT] config file.
 
