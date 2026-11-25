@@ -1,6 +1,6 @@
 name: manage-cli
 base: core24
-version: '1.5.1'
+version: '1.5.2'
 summary: Manage is a CLI for working with tasks organized in a hierarchical structure.
 description: |
   Manage is a command-line task manager organized in a hierarchical structure:
@@ -10,14 +10,11 @@ description: |
   directory for `TODO:` markers directly in source files.
 
 grade: stable 
-confinement: strict 
+confinement: classic
 
 apps:
   manage:
     command: bin/manage
-    plugs:
-      - home
-      - removable-media
 
 parts:
   manage:

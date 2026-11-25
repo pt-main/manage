@@ -1,9 +1,11 @@
 # manage - менеджер задач для командной строки
 
-<iframe title="Publicise card" src="https://snapcraft.io/manage-cli/embedded?button=black&channels=true&summary=true&screenshot=true" style="width: 100%; height: 100%; border: 1px solid #CCC; border-radius: 2px;"></iframe>
+<a href="https://snapcraft.io/manage-cli">
+   <img alt="Get it from the Snap Store" src=https://snapcraft.io/en/dark/install.svg />
+</a>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/scripts/install.sh | bash
 ```
 
 **Manage** - это CLI-инструмент для работы с задачами, организованными в иерархическую структуру: темы (проекты, области) содержат задачи. Каждая тема имеет приоритет, теги и список задач, каждая задача - статус выполнения, описание и временную метку. Дополнительно поддерживаются именованные таблицы для группировки тем. Инструмент не привязан к какой-либо предметной области и подходит для любых сценариев: от личных дел до рабочих проектов.

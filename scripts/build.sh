@@ -1,0 +1,1 @@
+sudo fish -c snapcraft pack
