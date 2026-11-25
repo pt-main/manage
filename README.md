@@ -1,9 +1,5 @@
 # manage - command-line task manager
 
-<a href="https://snapcraft.io/manage-cli">
-   <img alt="Get it from the Snap Store" src=https://snapcraft.io/en/dark/install.svg />
-</a>
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/scripts/install.sh | bash
 ```
