@@ -6,7 +6,7 @@ curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/scripts/install
 ```
 
 ```bash
-# the best method, good for both updates and the first installation, but it builds from binaries:
+# the best method, good for both updates and the first installation, but it builds from source:
 cd Downloads/
 git clone https://github.com/pt-main/manage
 cd manage
