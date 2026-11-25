@@ -6,7 +6,7 @@ curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/scripts/install
 ```
 
 ```bash
-# лучший способ, хорошо как для обновления так и для первой установки, но собирает из бинарников:
+# лучший способ, хорошо как для обновления так и для первой установки, но собирает из исходников:
 cd Downloads/
 git clone https://github.com/pt-main/manage
 cd manage
