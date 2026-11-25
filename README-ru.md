@@ -1,5 +1,7 @@
 # manage - менеджер задач для командной строки
 
+<iframe title="Publicise card" src="https://snapcraft.io/manage-cli/embedded?button=black&channels=true&summary=true&screenshot=true" style="width: 100%; height: 100%; border: 1px solid #CCC; border-radius: 2px;"></iframe>
+
 ```bash
 go install github.com/pt-main/manage/cmd/manage@latest
 ```
