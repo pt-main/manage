@@ -1,0 +1,30 @@
+name: manage-cli
+base: core24
+version: '1.5.1'
+summary: Manage is a CLI for working with tasks organized in a hierarchical structure.
+description: |
+  Manage is a command-line task manager organized in a hierarchical structure:
+  themes (projects, areas) contain tasks with completion status, description,
+  and timestamps. Supports custom priority ordering, tags, named tables for
+  grouping themes, and a transient `--code` mode that scans your project
+  directory for `TODO:` markers directly in source files.
+
+grade: stable 
+confinement: strict 
+
+apps:
+  manage:
+    command: bin/manage
+    plugs:
+      - home
+      - removable-media
+
+parts:
+  manage:
+    plugin: go
+    source: .
+    build-snaps:
+      - go/latest/stable
+    override-build: |
+      mkdir -p $CRAFT_PART_INSTALL/bin
+      CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.Version=${CRAFT_PROJECT_VERSION}" -o $CRAFT_PART_INSTALL/bin/manage ./cmd/manage
