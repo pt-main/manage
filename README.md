@@ -1,12 +1,12 @@
 # manage - command-line task manager
 
 ```bash
-# not working with global config (working with emulated global):
+# won’t work with the global config (emulates the global config). good for the first installation:
 curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/scripts/install.sh | bash
 ```
 
 ```bash
-# best way
+# the best method, good for both updates and the first installation, but it builds from binaries:
 cd Downloads/
 git clone https://github.com/pt-main/manage
 cd manage
