@@ -27,7 +27,7 @@ run_now() {
       sudo snap refresh "$SNAP_NAME" --amend
     else
       echo "📦 [online] Installing $SNAP_NAME from Snap Store..."
-      sudo snap install "$SNAP_NAME"
+      sudo snap install "$SNAP_NAME" --classic
     fi
     sudo snap alias "${SNAP_NAME}.${APP_NAME}" "$APP_NAME" || true
 
@@ -50,14 +50,14 @@ run_dev() {
 
   if command -v snap &> /dev/null && command -v snapcraft &> /dev/null; then
     echo "🛠️  [dev] Building local snap package..."
-    snapcraft pack
+    sudo "$(command -v snapcraft)" pack
     SNAP_FILE=$(ls -t ${SNAP_NAME}_*.snap 2>/dev/null | head -n 1)
     if [ -z "$SNAP_FILE" ]; then
       echo "❌ Failed to find built .snap file."
       exit 1
     fi
     echo "📦 [dev] Installing/updating from ./$SNAP_FILE..."
-    sudo snap install "./$SNAP_FILE" --dangerous
+    sudo snap install "./$SNAP_FILE" --dangerous --classic
     sudo snap alias "${SNAP_NAME}.${APP_NAME}" "$APP_NAME" || true
 
   elif command -v go &> /dev/null; then

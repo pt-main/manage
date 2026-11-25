@@ -1,7 +1,16 @@
 # manage - command-line task manager
 
 ```bash
+# not working with global config (working with emulated global):
 curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/scripts/install.sh | bash
+```
+
+```bash
+# best way
+cd Downloads/
+git clone https://github.com/pt-main/manage
+cd manage
+bash scripts/install.sh
 ```
 
 **Manage** is a CLI tool for working with tasks organized in a hierarchical structure: themes (projects, areas) contain tasks. Each theme has a priority, tags, and a list of tasks; each task has a completion status, description, and timestamp. Additionally, named tables are supported for grouping themes. The tool is not tied to any specific domain and is suitable for any scenario: from personal affairs to work projects.
