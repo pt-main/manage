@@ -4,7 +4,7 @@ set -e
 MODE="${1:-now}"
 APP_NAME="manage"
 SNAP_NAME="manage-cli"
-PKG_PATH="https://github.com/pt-main/manage/cmd/manage"
+PKG_PATH="github.com/pt-main/manage/cmd/manage"
 
 check_go_path() {
   local gobin
@@ -20,22 +20,29 @@ check_go_path() {
   fi
 }
 
-install_now() {
+run_now() {
   if command -v snap &> /dev/null; then
-    echo "📦 [online] Snap detected. Installing $SNAP_NAME from Snap Store..."
-    sudo snap install "$SNAP_NAME"
+    if snap list "$SNAP_NAME" &> /dev/null; then
+      echo "🔄 [online] Updating $SNAP_NAME via Snap Store..."
+      sudo snap refresh "$SNAP_NAME"
+    else
+      echo "📦 [online] Installing $SNAP_NAME from Snap Store..."
+      sudo snap install "$SNAP_NAME"
+    fi
     sudo snap alias "${SNAP_NAME}.${APP_NAME}" "$APP_NAME" || true
+
   elif command -v go &> /dev/null; then
-    echo "🐹 [online] Go detected. Installing via go install..."
+    echo "🐹 [online] Installing/updating via go install @latest..."
     go install "${PKG_PATH}@latest"
     check_go_path
+
   else
     echo "❌ Neither 'snap' nor 'go' was found on your system."
     exit 1
   fi
 }
 
-install_dev() {
+run_dev() {
   if [ ! -f "go.mod" ]; then
     echo "❌ Error: 'dev' mode must be run from the repository root (go.mod not found)."
     exit 1
@@ -49,13 +56,15 @@ install_dev() {
       echo "❌ Failed to find built .snap file."
       exit 1
     fi
-    echo "📦 [dev] Installing $SNAP_FILE..."
+    echo "📦 [dev] Installing/updating from ./$SNAP_FILE..."
     sudo snap install "./$SNAP_FILE" --dangerous
     sudo snap alias "${SNAP_NAME}.${APP_NAME}" "$APP_NAME" || true
+
   elif command -v go &> /dev/null; then
-    echo "🐹 [dev] Installing from local source via go install..."
+    echo "🐹 [dev] Installing/updating from local source via go install..."
     go install ./cmd/manage
     check_go_path
+
   else
     echo "❌ Neither 'snap + snapcraft' nor 'go' was found for local build."
     exit 1
@@ -63,18 +72,19 @@ install_dev() {
 }
 
 case "$MODE" in
-  now|online|"")
-    install_now
+  now|online|update|"")
+    run_now
     ;;
   dev|--dev|local)
-    install_dev
+    run_dev
     ;;
   *)
     echo "Usage: $0 [now|dev]"
-    echo "  now (default) - install latest release from Snap Store or Go proxy"
-    echo "  dev           - build and install from current directory"
+    echo "  now (default) - install or update latest release from Snap Store / Go"
+    echo "  dev           - build and install/update from current directory"
     exit 1
     ;;
 esac
 
-echo "✅ Done! Run '$APP_NAME init' to get started."
+echo "✅ Done!"
+"$APP_NAME" sys version || true
