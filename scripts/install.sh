@@ -24,7 +24,7 @@ run_now() {
   if command -v snap &> /dev/null; then
     if snap list "$SNAP_NAME" &> /dev/null; then
       echo "🔄 [online] Updating $SNAP_NAME via Snap Store..."
-      sudo snap refresh "$SNAP_NAME"
+      sudo snap refresh "$SNAP_NAME" --amend
     else
       echo "📦 [online] Installing $SNAP_NAME from Snap Store..."
       sudo snap install "$SNAP_NAME"
