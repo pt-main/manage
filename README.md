@@ -3,7 +3,7 @@
 <iframe title="Publicise card" src="https://snapcraft.io/manage-cli/embedded?button=black&channels=true&summary=true&screenshot=true" style="width: 100%; height: 100%; border: 1px solid #CCC; border-radius: 2px;"></iframe>
 
 ```bash
-go install github.com/pt-main/manage/cmd/manage@latest
+curl -fsSL https://raw.githubusercontent.com/pt-main/manage/main/install.sh | bash
 ```
 
 **Manage** is a CLI tool for working with tasks organized in a hierarchical structure: themes (projects, areas) contain tasks. Each theme has a priority, tags, and a list of tasks; each task has a completion status, description, and timestamp. Additionally, named tables are supported for grouping themes. The tool is not tied to any specific domain and is suitable for any scenario: from personal affairs to work projects.
